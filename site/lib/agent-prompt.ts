@@ -80,17 +80,6 @@ export const VOICE_ID = "bIHbv24MWmeRgasZH58o";
 
 
 /**
- * The agent's name. Locked 2026-08-14.
- *
- * It is the SAME character as the pixel crab on the home page — the crab is the
- * face, this widget is the voice. /about closes by naming him ("I call him Ted"),
- * so if this string ever changes, change ABOUT_SECTIONS in lib/about-data.ts too.
- * Deliberately a plain human name: a crab called Ted is funnier than a crab called
- * anything crab-adjacent, and it does not sound like a product.
- */
-export const AGENT_NAME = "Ted";
-
-/**
  * Hardcoded, never generated. The most-hit path on the whole feature therefore
  * costs nothing, and the three suggestions stop anyone wasting a question on
  * "so what does he do?" — which is what makes a cap of three feel generous.
@@ -154,7 +143,7 @@ export const CAP_CTA: Record<Language, string> = {
  * agent-guard.ts: someone motivated enough to do that is a qualified lead. The
  * spend guarantee is the Anthropic Console limit, not this number.
  */
-export const RESET_HOURS = 72;
+const RESET_HOURS = 72;
 export const RESET_MS = RESET_HOURS * 60 * 60 * 1000;
 
 /**

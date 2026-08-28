@@ -98,7 +98,7 @@ export function clientIp(req: Request): string {
 const since = (stamps: number[], window: number, now: number) =>
   stamps.filter((t) => now - t < window);
 
-export type GuardResult =
+type GuardResult =
   | { ok: true }
   | { ok: false; status: 429; reason: "ip" | "global" };
 

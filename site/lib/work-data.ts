@@ -8,12 +8,13 @@
  * Neither has a resume-given metric and NONE WAS INVENTED (spec §5): both stay
  * qualitative unless Arnav supplies real numbers.
  *
- * Card 01 (canon) deliberately has no NDA lock — it is the site's named
- * flagship everywhere else. Its footer-right slot ships empty; there is no
- * per-project "live" badge pattern in the codebase and one was not invented.
+ * Card 01 (canon) carries the NDA lock like the other two — it is the site's
+ * named flagship everywhere else, but the work itself is still under NDA.
+ * There is no per-project "live" badge pattern in the codebase and one was
+ * not invented.
  */
 
-export type WorkCard = {
+type WorkCard = {
   /** Displayed index, "01"–"03". */
   index: string;
   /** Client or company, lowercase, top-right of the card header. */
@@ -50,7 +51,7 @@ export const WORK_CARDS: readonly WorkCard[] = [
     index: "02",
     client: "jerseystem",
     title: "hiring, forecast not reaction",
-    oneLiner: "twenty percent faster to fill a role.",
+    oneLiner: "20% faster to fill a role.",
     problem: "hiring was reactive, with no view of what was coming.",
     role: "built a predictive model on historical capacity data.",
     tags: ["python", "sql", "looker"],
@@ -75,9 +76,9 @@ export const WORK_COPY = {
   eyebrow: "SELECTED WORK",
   title: "Proof of shipped things",
   blurb:
-    "recent work is under NDA, so here's the shape of it: problem, role, impact. details on a call.",
+    "Recent work is under NDA, so here's the shape of it: Problem, Role, Impact. Details on call.",
   /** Verbatim, locked 2026-07-30 — do not reword. */
   ndaTooltip: "this is under nda",
   ndaLabel: "nda",
-  cta: "more on how i work",
+  cta: "More on how I work ",
 } as const;

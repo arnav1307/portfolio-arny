@@ -6,6 +6,7 @@ import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { DESK_OBJECTS } from "@/lib/data";
+import { usePageTransition } from "@/components/motion/page-transition";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -53,13 +54,19 @@ const STAGE = {
       ease: "spring" as const,
     },
   },
-  status: { x: 82, y: 125 },
+  status: { x: 105, y: 30 },
 } as const;
 
 type ObjectId = keyof typeof STAGE.objects;
 
 export function Desk() {
   const sectionRef = useRef<HTMLElement>(null);
+  const { navigate } = usePageTransition();
+
+  const goAbout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate("/how-i-work");
+  };
 
   useLayoutEffect(() => {
     const section = sectionRef.current;
@@ -167,9 +174,17 @@ export function Desk() {
       // the opening's DotField canvas can't bleed over this section.
       className="section-snap flex w-full flex-col justify-center overflow-hidden py-[22px]"
     >
+      {/* max-width 1000 + 28px inline padding, mx-auto — copied exactly from
+          .stack-inner (Arnav 2026-08-28, screenshot: "copy the position of
+          stack") rather than the stage's own 1152px box below. The stage and
+          Stack's content column are two different width systems on this
+          page; matching the header to STAGE_W landed it 76px right of
+          Stack's eyebrow at 1280px viewport (measured live: stack left
+          132.5px vs desk 56.5px) — this matches Stack's left edge exactly
+          instead of approximating it. */}
       <h2
         data-desk-title
-        className="type-label mb-4 text-center text-muted"
+        className="type-label section-eyebrow relative mx-auto mb-4 w-full max-w-[1000px] px-7 text-muted -left-[10px]"
       >
         THE DESK
       </h2>
@@ -192,13 +207,13 @@ export function Desk() {
             top: pct(STAGE.status.y, STAGE_H),
           }}
         >
-          <span className="type-label whitespace-nowrap text-ink">
-            OPEN TO WORK
-          </span>
           <span
             aria-hidden
             className="desk-status-dot size-2 rounded-full bg-[var(--status-green)]"
           />
+          <span className="type-label desk-status-label whitespace-nowrap text-ink">
+            Open to freelance and full-time opportunities.
+          </span>
         </div>
 
         {DESK_OBJECTS.map((obj) => {
@@ -254,7 +269,7 @@ export function Desk() {
               </div>
 
               <span
-                className="type-label pointer-events-none mt-3 block text-center text-muted"
+                className="type-label desk-status-label pointer-events-none mt-3 block text-center text-muted"
               >
                 {obj.label}
               </span>
@@ -280,6 +295,7 @@ export function Desk() {
           <div data-desk-idle="figurine" className="relative z-[1]">
             <Link
               href="/how-i-work"
+              onClick={goAbout}
               aria-label="About Arnav"
               data-cursor="pointer"
               className="desk-figurine block"
@@ -299,7 +315,7 @@ export function Desk() {
             </Link>
           </div>
 
-          <span className="type-label mt-3 block text-center text-muted">
+          <span className="type-label desk-status-label mt-3 block text-center text-muted">
             {STAGE.figurine.label}
           </span>
         </div>

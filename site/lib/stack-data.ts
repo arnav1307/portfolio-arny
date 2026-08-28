@@ -23,9 +23,9 @@
  * - `solid` — flatten the whole mark to ONE ink silhouette, knocked-out glyph
  *             included, so it reads like codex/spotify (sql, typescript).
  */
-export type StackRest = "fill" | "flat" | "plate" | "solid";
+type StackRest = "fill" | "flat" | "plate" | "solid";
 
-export type StackTool = {
+type StackTool = {
   /** Lowercase display name, shown in the hover tooltip. */
   name: string;
   /** File in public/icons/tools/, without the extension. */
@@ -42,7 +42,7 @@ export type StackTool = {
   href?: string;
 };
 
-export type StackGroup = {
+type StackGroup = {
   label: string;
   tools: readonly StackTool[];
 };

@@ -21,13 +21,14 @@
  */
 
 import { useLayoutEffect, useRef } from "react";
-import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useSmoother } from "@/components/motion/smooth-provider";
 import { usePageTransition } from "@/components/motion/page-transition";
 import { TerminalShot } from "@/components/ui/terminal-shot";
 import { TedWalk } from "@/components/ui/ted-walk";
+import { OPEN_AGENT_EVENT } from "@/components/ui/interview-agent";
+import { TextArrowCta } from "@/components/ui/text-arrow-cta";
 import { GitHubIcon, LinkedInIcon, XIcon } from "@/components/ui/social-icons";
 import { CONTACT } from "@/lib/data";
 import {
@@ -160,12 +161,15 @@ export function AboutHero() {
           data-about-enter
           className="about-rail flex flex-col gap-6"
         >
-          {/* Category chips */}
-          <div className="flex flex-wrap gap-2.5">
+          {/* Category chips — sized down 2026-08-26 (Arnav: "reduce the size
+              and match the aesthetics" of the facts card text below it).
+              Smaller padding + a slightly reduced font-size than the shared
+              .type-label default, scoped to this chip row only. */}
+          <div className="flex flex-wrap gap-2">
             {ABOUT_TAGS.map((tag) => (
               <span
                 key={tag}
-                className="type-label rounded-md bg-[var(--tint-rect)] px-3.5 py-2.5 text-ink-soft"
+                className="type-label rounded-md bg-[var(--tint-rect)] px-2.5 py-1.5 text-[10.5px] text-ink-soft"
               >
                 {tag}
               </span>
@@ -240,7 +244,7 @@ export function AboutHero() {
             className="mt-11 flex flex-col gap-4"
           >
             <span className="about-eyebrow">{ABOUT_EYEBROW}</span>
-            <h1 className="about-heading" style={{ fontSize: "clamp(2rem, 3.6vw, 2.8rem)" }}>
+            <h1 className="about-heading">
               {ABOUT_TITLE}
             </h1>
           </header>
@@ -260,14 +264,50 @@ export function AboutHero() {
 
                 {section.body.map((paragraph) => (
                   <p key={paragraph} className="about-body">
-                    {paragraph}
+                    {paragraph.endsWith("I call him Ted.") ? (
+                      <>
+                        {paragraph.slice(0, -"Ted.".length)}
+                        <u
+                          role="button"
+                          tabIndex={0}
+                          data-cursor="pointer"
+                          aria-label="Open the Ted interview widget"
+                          onClick={() =>
+                            window.dispatchEvent(new CustomEvent(OPEN_AGENT_EVENT))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              window.dispatchEvent(new CustomEvent(OPEN_AGENT_EVENT));
+                            }
+                          }}
+                        >
+                          Ted
+                        </u>
+                        .
+                      </>
+                    ) : (
+                      paragraph
+                    )}
                   </p>
                 ))}
 
+                {/* Arrows instead of bullet discs (Arnav 2026-08-27), cherry
+                    red — same glyph/colour pairing as Selected Work's
+                    one-liner arrow. */}
                 {"bullets" in section && section.bullets && (
-                  <ul className="about-body flex list-disc flex-col gap-2 pl-5">
+                  <ul className="about-body flex flex-col gap-2">
                     {section.bullets.map((bullet) => (
-                      <li key={bullet}>{bullet}</li>
+                      <li key={bullet} className="flex gap-2">
+                        <span
+                          aria-hidden="true"
+                          className="shrink-0"
+                          style={{ color: "var(--accent-red)" }}
+                        >
+                          ↳
+                        </span>
+                        <span>{bullet}</span>
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -307,18 +347,20 @@ export function AboutHero() {
             </blockquote>
           </figure>
 
-          {/* Back to home — the nav has no "back", so the page ends with one. */}
-          <Link
+          {/* Back to home — the nav has no "back", so the page ends with one.
+              Reverse Text Arrow CTA (Arnav 2026-08-26: same component as
+              Selected Work's CTA, mirrored). */}
+          <TextArrowCta
             href="/"
+            reverse
             onClick={(e) => {
               e.preventDefault();
               navigate("/");
             }}
-            data-cursor="pointer"
-            className="type-label mt-16 inline-block text-ink transition-opacity hover:opacity-60"
+            className="mt-16"
           >
-            ← BACK
-          </Link>
+            Back
+          </TextArrowCta>
         </div>
       </div>
     </section>

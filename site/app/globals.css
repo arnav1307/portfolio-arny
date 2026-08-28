@@ -9,9 +9,12 @@
    ============================================================ */
 
 :root {
-  /* Core palette (light) */
-  --paper: #f3f0e9;
-  --ink: #131211;
+  /* Core palette (light) — typography/colour pass 2026-08-26, revised same day.
+     #FFF6E8 background was tried and rejected ("this color i do not like").
+     Now #F0F5FE with #01060D ink — a cool near-white / near-black pair,
+     replacing the original warm beige/black (#f3f0e9/#131211) entirely. */
+  --paper: #f0f5fe;
+  --ink: #01060d;
   --gold: #ef9f0a;
   --gold-bright: #fed317;
   --gold-deep: #7a4a05;
@@ -29,12 +32,24 @@
      rather than the saturated blue, which read as a foreign element. */
   --accent: #b4552d;
 
-  /* Warm neutrals (paper→ink ramp) */
+  /* Two new accent tokens, 2026-08-26 — Arnav's 3-colour system. Placement
+     still open beyond the two confirmed spots (scramble-hover state, contact
+     caret) — never used for body/heading text colour, which stays --ink. */
+  --accent-red: #c1121f;
+  --accent-blue: #a9c6ea;
+
+  /* Warm neutrals (paper→ink ramp). --muted darkened 2026-08-26 (Arnav: "grey
+     coloured text is too light") — was #8b857a in both themes, unreadable
+     against the warmer #FFF6E8 background. */
   --ink-soft: #4f4b44;
-  --muted: #8b857a;
+  --muted: #6b6459;
   --line: #ddd8cc;
-  --paper-raised: #faf8f2;
-  --tint-rect: rgba(19, 18, 17, 0.04);
+  /* Cards, stack-icon tiles, agent panel, about facts card. Matched to plain
+     white 2026-08-26 (Arnav: cards/icons/ask-about-me "looks too yellowish",
+     use cal-embed.tsx's #ffffff so it matches the new #F0F5FE background) —
+     was #faf8f2, a warm cream left over from the old beige palette. */
+  --paper-raised: #ffffff;
+  --tint-rect: rgba(1, 6, 13, 0.04);
   --status-green: #2fbf57;
   --crab: #d77757; /* footer pixel-crab body (exact hex from Arnav's SVG frames) */
   --halo: #ffc400; /* Ted's "speaking" halo overlay. Its own token so dark mode can retune it. */
@@ -43,17 +58,19 @@
      this is that blue pulled toward the site's own --blue so it doesn't shout. */
   --sparkle: #2b8ae8;
 
-  /* Typewriter block caret — sampled from Arnav's screen recording
-     (design/moodboard/Screen Recording 2026-07-27 at 7.55.53 PM.mov). More
-     saturated than --blue-deep; it is the ONLY blue in the contact section. */
-  --type-caret: #0b1fe8;
+  /* Typewriter block caret — resolved 2026-08-27 (Arnav): use --accent-blue,
+     same blue as opening-dp.tsx's chaos/clean toggle accents. Was --accent-red
+     as a placeholder guess. */
+  --type-caret: var(--accent-blue);
 
-  /* Closing band. Own scale (not --ink/--paper). Light = warm stone + dark
+  /* Closing band. Own scale (not --ink/--paper). Light = cool stone + dark
      type. Dark = deep stone + light type so the eye-toggle actually moves it
-     (2026-08-10) without inverting the band into a paper slab. */
-  --footer-bg: #dedbd3;
-  --footer-fg: #131211;
-  --footer-muted: #5c574e;
+     (2026-08-10) without inverting the band into a paper slab.
+     Re-tinted 2026-08-26 to match the new #F0F5FE/#01060D pair — was warm
+     grey/beige (#dedbd3/#131211) left over from the old palette. */
+  --footer-bg: #dde3ef;
+  --footer-fg: #01060d;
+  --footer-muted: #4a5568;
   --footer-rule: color-mix(in srgb, var(--footer-fg) 18%, transparent);
 
   /* Nav strip height — the opening's horizontal divider hangs off this so the
@@ -71,18 +88,24 @@
 /* Dark theme — applied only when the eye-toggle sets data-theme="dark".
    Full inversion; accents (gold/blue) unchanged. See tokens.md dark table. */
 :root[data-theme="dark"] {
-  --paper: #131211;
-  --ink: #f3f0e9;
+  --paper: #01060d;
+  --ink: #f0f5fe;
   --ink-soft: #c9c4b8;
+  /* Unchanged from the light-mode fix on purpose — #8b857a already reads
+     clearly against this near-black background; darkening it here would go
+     the wrong direction for a dark theme. */
   --muted: #8b857a;
   --line: #2a2825;
-  --paper-raised: #1c1a18;
-  --tint-rect: rgba(243, 240, 233, 0.05);
+  /* Re-tinted 2026-08-26 alongside the light-mode fix — was #1c1a18, warm
+     charcoal left over from the old beige/black palette. */
+  --paper-raised: #10161f;
+  --tint-rect: rgba(240, 245, 254, 0.05);
   /* Footer follows the eye-toggle: deep stone + light type (was mid-grey with
-     dark text — muddy, barely moved on flip). */
-  --footer-bg: #2a2825;
-  --footer-fg: #f3f0e9;
-  --footer-muted: #9a948a;
+     dark text — muddy, barely moved on flip). Re-tinted 2026-08-26 to match
+     the new cool palette. */
+  --footer-bg: #10161f;
+  --footer-fg: #f0f5fe;
+  --footer-muted: #8a94a6;
   --footer-rule: color-mix(in srgb, var(--footer-fg) 16%, transparent);
   /* Lighter terracotta so the same warm accent stays legible against the
      near-black page (Arnav 2026-07-31). */
@@ -332,6 +355,35 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
+  /* Real section headers only — Desk/Contact/Experience/Stack/RightNow/
+     SelectedWork's eyebrow (THE DESK, RIGHT NOW, ...), NOT the other ~20
+     .type-label call sites (chips, tags, badges, the NDA pill, rail city
+     label) which stay at the plain 12px/400 default. Arnav 2026-08-28:
+     "THE DESK" read as inert/skippable at the base size — asked for a
+     header with real presence, applied consistently everywhere a section
+     opens with one, same two-classes-beat-one pattern as .rail-city below.
+     Stays in the mono family (least risky, most consistent direction of
+     the 3 discussed) — bigger, heavier, tighter tracking is the whole
+     change. */
+  .section-eyebrow {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  /* Overrides .type-label's uppercase for the opening rail's city line only
+     (Arnav 2026-08-27: "Amsterdam, Netherlands instead of caps") — two
+     classes beats one within the same layer, so this doesn't need
+     !important and doesn't touch .type-label's default anywhere else. */
+  .rail-city {
+    text-transform: none;
+  }
+  /* Overrides .type-label's uppercase for the desk's "Open to work" status
+     line only (Arnav 2026-08-28) — same two-classes-beat-one pattern as
+     .rail-city above, scoped so the other 25 .type-label call sites keep
+     forced caps. */
+  .desk-status-label {
+    text-transform: none;
+  }
   .type-time {
     font-family: var(--font-mono);
     font-weight: 400;
@@ -339,17 +391,27 @@ body {
   }
 }
 
-/* Opening headline + name block. Satoshi MEDIUM (500) per Arnav 2026-07-26 —
-   the variable font carries a real 300–900 axis, so this is the true Medium cut,
-   not a synthesised weight. Size is inherited from the section so the
-   half-split scales as one unit. */
+/* Opening headline + name block — the site's H1 ("Hi, I'm Arnav"). Open Sauce
+   One BLACK (900), the family's heaviest static weight — typography pass
+   2026-08-26. Was Satoshi at a literal 1000 (out-of-range even for Satoshi's
+   own 300–900 axis); Open Sauce One tops out at 900 exactly, so this is now a
+   real weight, not a browser-clamped one. Size is inherited from the section
+   so the half-split scales as one unit. */
 .opening-name,
 .name-line {
   font-family: var(--font-display);
-  font-weight: 1000;
+  font-weight: 900;
   line-height: 1;
   letter-spacing: -0.01em;
   color: var(--ink);
+}
+
+/* Scramble hover accent, 2026-08-26 — one of the two new colour candidates
+   from Arnav's 3-colour system. Text stays --ink at rest; --accent-blue only
+   flashes in while the scramble animation is mid-flight. */
+.scramble-word:hover,
+.scramble-word:focus-visible {
+  color: var(--accent-blue);
 }
 
 /* ============================================================
@@ -504,6 +566,16 @@ body {
   padding-block: clamp(64px, 10vh, 120px);
 }
 
+/* /how-i-work's nav — reverted to the plain pre-pill bar 2026-08-27 (Arnav:
+   "remove the bar... just place the icons regular how it was before"). Full-
+   width, no pill shape, no avatar — a simple readable backdrop, distinct
+   from `.nav-shell` (which is now the home pill's own shape/size and would
+   be wrong here: fit-content width, 999px radius, 70px min-height). */
+.nav-plain-bar {
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
 /* The nav is chrome: it must sit above every section's stacking context —
    including the DotField canvas — at every scroll position.
 
@@ -511,80 +583,169 @@ body {
    anchor to the viewport normally — the wrapper no longer creates a containing
    block the way ScrollSmoother's fixed wrapper did. The nav is still rendered
    outside it; this rule only handles stacking, never position. */
-.nav-shell {
+/* Outer fixed group: the AG avatar + the pill, centred as a unit. Only this
+   wrapper's visibility responds to scroll (nav.tsx: `hidden`, /how-i-work
+   only) — the pill's own shape is now CONSTANT, see .nav-shell below. */
+.nav-shell-group {
   z-index: 100;
-  /* Readable backdrop so the controls stay legible over the blue DotField half
-     instead of disappearing into it. */
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-  backdrop-filter: blur(8px);
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 380ms var(--ease-signature),
+    transform 380ms var(--ease-signature);
+}
+
+/* /how-i-work only (nav.tsx: hidden = isAbout && scrolling down past the
+   threshold). The nav is redundant there once scrolling starts, since the
+   page already has two ways back to home: the HomeButton the pill shows at
+   rest, and the reverse Text Arrow CTA at the foot of the page
+   (about-hero.tsx). Slides up slightly AND fades, rather than opacity alone
+   — Arnav 2026-08-27: the plain fade "does not smooth away in or out" felt
+   flat; a small translate reads as the bar actually leaving, not just
+   dissolving in place. pointer-events dropped so an invisible bar can't
+   steal a click over the content beneath it. */
+.nav-shell-group[data-hidden="true"] {
+  opacity: 0;
+  transform: translateY(-12px);
+  pointer-events: none;
+}
+
+/* AG avatar mark — separate circular chip beside the pill, ss12 reference
+   (Arnav 2026-08-27: "Add AG in circle and then the next bar"). Same glass
+   language as the pill (blur, translucency) but its own shape, matching the
+   reference's two-piece layout rather than one fused bar. */
+.nav-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  backdrop-filter: blur(24px) saturate(1.8);
+  box-shadow:
+    0 10px 32px color-mix(in srgb, var(--ink) 18%, transparent),
+    inset 0 1px 1px color-mix(in srgb, var(--paper) 90%, white),
+    inset 0 0 0 1px color-mix(in srgb, var(--paper) 40%, white 20%);
+}
+
+/* The nav is chrome: it must sit above every section's stacking context —
+   including the DotField canvas — at every scroll position.
+
+   ⚠️ LOCKED 2026-08-27 (Arnav, ss12 reference): this IS the permanent shape,
+   present from first paint. There is no more static-full-width-bar state
+   that shrinks into a pill past a scroll threshold — that two-state model
+   (`[data-liquid]`, `LIQUID_SCROLL_THRESHOLD` in nav.tsx) is GONE. A previous
+   round's screenshot showed the transition between the two states mid-flight,
+   which Arnav rejected outright ("not like the way it does a transition from
+   being static but instead stay like that throughout"). Do not reintroduce a
+   scroll-driven change to this rule's shape, size, or padding — only
+   `.nav-shell-group`'s opacity/transform (above) still responds to scroll,
+   and only on /how-i-work. */
+.nav-shell {
+  width: fit-content;
+  /* Explicit 70px (Arnav 2026-08-27: "the thickness of the nav bar in about
+     I need that on the first home page nav bar, exact thickness"). Content-
+     driven height alone gave home 55px vs /how-i-work's 70px — the
+     HomeButton there is taller than a home nav-link row, so the pill grew
+     to fit it while home's pill stayed shorter. min-height (not height)
+     so a future taller content still has room, but the two pages match at
+     rest regardless of what each one's content naturally needs. */
+  min-height: 70px;
+  border-radius: 999px;
+  padding-block: 16px;
+  padding-inline: 30px;
+  /* Real minimum air between the clock/toggle cluster and the link group
+     (Arnav: "too clustered... some space"). A fit-content pill sized to its
+     own content leaves `justify-between` nothing to distribute — the two
+     clusters would otherwise sit flush against each other with zero gap.
+     This is a floor, not a fixed gap: `justify-between` can still push them
+     further apart than 56px if the pill's content naturally spans more. */
+  gap: 56px;
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  backdrop-filter: blur(24px) saturate(1.8);
+  /* Depth technique borrowed from freefrontend.com/css-liquid-glass (the
+     inset box-shadow layering, not their SVG chromatic-aberration filter —
+     that needs an embedded SVG defs block for a small legibility gain not
+     worth the complexity here): a bright inset ring near the edge plus a
+     soft inner glow reads as a lit glass surface, not just a blurred tint. */
+  box-shadow:
+    0 10px 32px color-mix(in srgb, var(--ink) 18%, transparent),
+    inset 0 1px 1px color-mix(in srgb, var(--paper) 90%, white),
+    inset 0 0 0 1px color-mix(in srgb, var(--paper) 40%, white 20%),
+    inset 0 -12px 20px -8px color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-shell-group {
+    transition: none;
+  }
 }
 
 /* The line under the nav. Deliberately stronger than --line so it reads as a
-   real rule (Arnav 2026-07-31), and it is what the charm hangs from. */
+   real rule (Arnav 2026-07-31). ⚠️ No longer anchors the nav charm — that
+   moved into the footer (2026-08-27), so this line is purely the opening's
+   own divider now. */
 .nav-divider {
   border-top: 1px solid color-mix(in srgb, var(--ink) 42%, transparent);
 }
 
-/* Nav charm — hangs directly under the nav's clock, home page only.
-   Fixed, and rendered outside #smooth-content so the smoother's transform
-   doesn't drag it (CLAUDE.md §Nav charm). */
-/* Hangs under the Amsterdam clock (nav left). Tweak `left` to slide it —
-   smaller = more left. Was 150px (CET E–T gap); nudged left 2026-08-10. */
-.nav-charm {
-  position: fixed;
-  top: var(--nav-h);
-  left: 110px;
-  /* Under the nav (z-100) but over the page. It must NOT go negative: `main`
-     paints no background of its own, so a negative index hides the charm behind
-     the page everywhere, including the opening. Keeping it off later sections
-     is the scroll fade's job (see ui/nav-charm), not the stacking order's. */
-  z-index: 90;
-  /* Shell stays passthrough so the fixed box doesn't eat clicks beside the
-     lemon. Hit target is `.nav-charm-swing` only (hover tip needs events). */
-  pointer-events: none;
-  /* Explicit width: a fixed element shrink-wraps to zero otherwise, and the
-     image's own `width: 34px` then has no box to resolve against. */
-  width: 34px;
+/* Footer charm — moved out of the fixed nav chrome into the footer
+   (Arnav 2026-08-27: "towards the right side but above Powered by, make it
+   look like it is hanging over there"). No longer `position: fixed` — it's
+   a normal flex child of `.footer-right`, sitting above `.footer-stack`.
+   Uses --footer-* tokens, not --ink/--paper, per this file's own rule that
+   the footer band only participates in theme through its own token set. */
+.footer-charm {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 23px);
+  width: 1450px;
 }
 
 /* The swing pivots from the string, not the artwork's centre. */
-.nav-charm-swing {
+.footer-charm-swing {
   position: relative;
   width: 34px;
   transform-origin: top center;
-  pointer-events: auto;
   cursor: help;
 }
 
-.nav-charm-swing img {
+.footer-charm-swing img {
   display: block;
 }
 
-/* Hang string — drawn here (PNG string too pale on paper). Charm top sits on
-   `.nav-divider` (`top: var(--nav-h)`); -1px kisses the rule so it reads as
-   hanging FROM the line, without poking up into the nav bar. */
-.nav-charm-swing::before {
+/* Hang string — drawn here (PNG string too pale on its own). Sits above the
+   image, reading as the charm hanging from something above it, without
+   needing an actual rule/line to anchor to (the old nav version hung off
+   .nav-divider; the footer has no equivalent line to kiss). */
+.footer-charm-swing::before {
   content: "";
   position: absolute;
-  top: -1px;
+  top: -10px;
   left: 50%;
   width: 1px;
-  height: 11px;
+  height: 10px;
   transform: translateX(-50%);
-  background: var(--ink);
-  opacity: 0.65;
+  background: var(--footer-fg);
+  opacity: 0.5;
 }
 
 /* Tiny nazar tip — same dark-pill language as the NDA lock, not a card. */
-.nav-charm-tip {
+.footer-charm-tip {
   position: absolute;
   top: calc(100% + 8px);
   left: 50%;
   z-index: 3;
   padding: 5px 9px;
   border-radius: 6px;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--footer-fg);
+  color: var(--footer-bg);
   font-family: var(--font-mono);
   font-weight: 400;
   font-size: 10.5px;
@@ -596,13 +757,13 @@ body {
   transition: opacity 280ms var(--ease-signature);
 }
 
-.nav-charm-swing:hover .nav-charm-tip,
-.nav-charm-swing:focus-visible .nav-charm-tip {
+.footer-charm-swing:hover .footer-charm-tip,
+.footer-charm-swing:focus-visible .footer-charm-tip {
   opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-charm-tip {
+  .footer-charm-tip {
     transition: none;
   }
 }
@@ -611,13 +772,25 @@ body {
    Kept uppercase with a touch of tracking so the switch reads as a weight
    change rather than a different label. */
 .nav-link {
+  display: inline-flex;
+  align-items: center;
+  /* Icon + label (nav-link-icons.tsx), ss12 reference 2026-08-27. */
+  gap: 6px;
   font-family: var(--font-display);
   font-size: 13px;
   /* Thinned from 700 → 500 (Arnav 2026-07-30). Satoshi's Medium still reads as
      a clear step up from the mono label it replaced, without the heft. */
   font-weight: 500;
-  text-transform: uppercase;
+  /* text-transform: uppercase REMOVED 2026-08-27 (Arnav: "WORK should Work,
+     not all caps, same for others"). The link labels in nav.tsx are now
+     written in the actual case to render (Work/Stack/Contact/Approach) —
+     this rule would have silently re-forced caps on them otherwise. */
   letter-spacing: 0.04em;
+}
+
+.nav-link svg {
+  flex: none;
+  opacity: 0.75;
 }
 
 /* ============================================================
@@ -687,7 +860,8 @@ body {
   /* BIG — section heading */
   .about-heading {
     font-family: var(--font-display);
-    font-size: clamp(1.75rem, 3vw, 2.375rem);
+    /* font-size: clamp(1.75rem, 3vw, 2.375rem); */
+    font-size: 32px;
     font-weight: 700;
     line-height: 1.15;
     letter-spacing: -0.02em;
@@ -697,7 +871,7 @@ body {
   /* Body copy */
   .about-body {
     font-family: var(--font-display);
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 400;
     line-height: 1.65;
     color: var(--ink-soft);
@@ -707,7 +881,7 @@ body {
   /* Left rail: metadata label / value */
   .about-fact-label {
     font-family: var(--font-display);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 300;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -715,7 +889,7 @@ body {
   }
   .about-fact-value {
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: 13.5px;
     font-weight: 400;
     line-height: 1.45;
     color: var(--ink-soft);
@@ -803,6 +977,29 @@ body {
     box-shadow var(--dur-reveal) var(--ease-signature);
 }
 
+/* Left side: "Arnav." + "2026 ©" stacked underneath (Arnav 2026-08-27,
+   moved from the opening's vertical rail — see section-rails.tsx). */
+.footer-name-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Right side: the charm hangs as an absolute overlay above the two stacked
+   mono lines, not a flex sibling — a flex child made `.footer-right` taller
+   than `.footer-name-stack`, and `.footer-band`'s `align-items: flex-end`
+   grew the whole band to match (Arnav 2026-08-27: "footer nav height
+   increased... looks bigger than before after adding the charm, revert it").
+   `position: relative` here is only the anchor for the charm's absolute
+   position — Arnav is positioning the charm itself by hand from here. */
+.footer-right {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  align-self: flex-start;
+}
+
 /* Right side: two stacked mono lines, quiet against the name mark. */
 .footer-stack {
   display: flex;
@@ -824,11 +1021,14 @@ body {
   transition: color var(--dur-reveal) var(--ease-signature);
 }
 
-/* Powered-by + tagline — Departure Mono footnotes, not competing with name. */
+/* Powered-by + tagline. Weight raised to H2-level (700) 2026-08-26 — Arnav:
+   "make the weight heavy not like Arnav but h2 header should work". Keeps
+   its own small size/mono family so it still reads as a footnote, just a
+   bolder-cut one, not the name mark's own treatment. */
 .footer-nav-sub {
   font-family: var(--font-mono);
   font-size: clamp(11px, 0.85vw, 12.5px);
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.35;
   color: var(--footer-muted);
@@ -878,7 +1078,8 @@ body {
   margin-top: 14px;
   font-family: var(--font-display);
   font-size: clamp(28px, 3.2vw, 40px);
-  font-weight: 500;
+  /* H2 — Open Sauce One medium-black (700), typography pass 2026-08-26. */
+  font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
   color: var(--ink);
@@ -1010,7 +1211,9 @@ body {
 .experience-chevron {
   display: grid;
   place-items: center;
-  color: var(--muted);
+  /* Cherry red 2026-08-27 (Arnav: arrows in experience.tsx + selected-work.tsx
+     match). Was --accent-blue for one round, briefly, before this. */
+  color: var(--accent-red);
   transition: transform 320ms var(--ease-signature);
 }
 
@@ -1074,7 +1277,12 @@ body {
   position: absolute;
   left: 0;
   top: 0;
-  color: var(--accent);
+  /* Cherry red 2026-08-27 (Arnav, screenshot: still orange). This is a
+     DIFFERENT rule from .experience-chevron (the accordion's open/close
+     arrow, already --accent-red) — same ↳ glyph family as Selected Work's
+     .work-arrow, but a separate selector, so fixing one earlier round never
+     touched this one. */
+  color: var(--accent-red);
   font-size: 0.95em;
   line-height: 1.5;
 }
@@ -1119,7 +1327,8 @@ body {
   margin-top: 14px;
   font-family: var(--font-display);
   font-size: clamp(28px, 3.2vw, 40px);
-  font-weight: 500;
+  /* H2 — Open Sauce One medium-black (700), typography pass 2026-08-26. */
+  font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
   color: var(--ink);
@@ -1261,6 +1470,57 @@ body {
   bottom: clamp(1rem, 3vh, 2rem);
 }
 
+/* ── Mode toggle icon buttons (Arnav 2026-08-27) — puzzle/broom icons per
+   ss11.png, replacing the plain text pills. Icon fixed to --ink via CSS
+   filter-free approach: puzzle.svg's fill is currentColor-friendly via
+   mask, broom.png is a flat raster so it's masked the same way for parity
+   between the two rest states. ── */
+.opening-dp-mode-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  /* Both source assets are dark line art on transparent ground — recolour to
+     --ink via mask so the eye-toggle's dark mode doesn't leave a black icon
+     on a near-black button. Mask URL is per-icon, set inline from JSX
+     (opening-dp.tsx) since puzzle.svg and broom.png need different sources. */
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: var(--ink);
+}
+
+/* Tooltip pill — same visual language as the Selected Work NDA tooltip
+   (.work-nda-tip): dark ink pill, paper text, mono, appears above the
+   button on hover/focus. Static position (centred above the button) since
+   there's no cursor-follow need here — unlike the NDA tooltip, the hover
+   target IS the whole interactive element. */
+.opening-dp-mode-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 3;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 10.5px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms var(--ease-signature);
+}
+
+.opening-dp-mode-btn:hover .opening-dp-mode-tip,
+.opening-dp-mode-btn:focus-visible .opening-dp-mode-tip {
+  opacity: 1;
+}
+
 /* Headline and calendar read as ONE section, with a LITTLE space between them
    (Arnav 2026-07-31) — not the section-sized break this used to be, but not
    flush either. */
@@ -1270,14 +1530,17 @@ body {
 .contact-book {
   width: 100%;
   max-width: 1140px;
-  margin-top: clamp(56px, 8vh, 96px);
+  /* Bumped from clamp(56px, 8vh, 96px) — Arnav 2026-08-26: gap to the
+     typewriter headline read "too compacted". */
+  margin-top: clamp(80px, 11vh, 128px);
 }
 
 .contact-book-title {
   margin-top: 14px;
   font-family: var(--font-display);
   font-size: clamp(24px, 2.8vw, 34px);
-  font-weight: 500;
+  /* H2 — Open Sauce One medium-black (700), typography pass 2026-08-26. */
+  font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.02em;
   color: var(--ink);
@@ -1368,7 +1631,8 @@ body {
   margin-top: 14px;
   font-family: var(--font-display);
   font-size: clamp(28px, 3.2vw, 40px);
-  font-weight: 500;
+  /* H2 — Open Sauce One medium-black (700), typography pass 2026-08-26. */
+  font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
   color: var(--ink);
@@ -1376,11 +1640,17 @@ body {
 
 .work-blurb {
   margin-top: 12px;
-  max-width: 62ch;
   font-family: var(--font-display);
   font-size: clamp(14px, 1.15vw, 16px);
   line-height: 1.55;
   color: var(--muted);
+  /* Reverted 2026-08-27 (Arnav, with a screenshot): natural text wrap, not a
+     forced line break — the earlier \n-in-copy + pre-line pass was undone. */
+  /* max-width: 62ch removed 2026-08-27 (Arnav, screenshot) — it wrapped the
+     sentence's tail ("Details on call.") onto its own second line. Desktop
+     is the only supported breakpoint (mobile deferred, CLAUDE.md), so the
+     full sentence fits one line at .work-inner's 1140px without a ch cap. */
+  white-space: nowrap;
 }
 
 /* All 3 in ONE row (spec §5) — not stacked, not the reference's 2-col wrap. */
@@ -1394,8 +1664,17 @@ body {
 /* Roomier card, same type sizes inside (ss7) — Arnav 2026-07-31: "increase the
    size of the card, keep the content inside of the same size". */
 .work-card {
+  position: relative;
+  /* overflow:hidden was tried 2026-08-26 to keep the NDA tooltip inside the
+     card, then REMOVED 2026-08-27 — it clipped the tooltip out of existence
+     entirely near the card's top edge ("the hover is gone"). Fixed properly
+     by clamping the tooltip's source y-coordinate in JS instead (see
+     handleCardMouseMove in selected-work.tsx) — the card no longer needs to
+     clip anything. */
   display: flex;
   flex-direction: column;
+  /* Restored to 400px 2026-08-27 (Arnav: "restore the card to 400px that was
+     better") — the 320px experiment from the same day is reverted. */
   min-height: 400px;
   padding: 30px 28px;
   border: 1px solid var(--line);
@@ -1423,7 +1702,8 @@ body {
 
 /* Index is accent-coloured, per ss7. Static — it does NOT shift on hover. */
 .work-index {
-  color: var(--accent);
+  /* Cherry red 2026-08-27 (Arnav: numbers were still orange/--accent). */
+  color: var(--accent-red);
 }
 
 .work-client {
@@ -1449,7 +1729,9 @@ body {
 }
 
 .work-arrow {
-  color: var(--accent);
+  /* Cherry red 2026-08-27 (Arnav: same colour as experience.tsx's chevron).
+     Was var(--accent), the site's terracotta. */
+  color: var(--accent-red);
 }
 
 .work-rows {
@@ -1512,14 +1794,33 @@ body {
 }
 
 /* ── NDA lock + tooltip — the section's only hover interaction. ── */
+/* ⚠️ NOT position:relative. --work-nda-x/-y are written by JS as coordinates
+   relative to .work-card (see handleCardMouseMove in selected-work.tsx), so
+   the tooltip's containing block must be .work-card itself — if .work-nda
+   were the positioned ancestor instead, the same px values place the pill
+   relative to this small badge, landing it far off the card entirely. That
+   was the actual bug (Arnav 2026-08-27 screenshot: "the hover is somewhere
+   else and not within the card"). .work-card already carries
+   position:relative. */
 .work-nda {
-  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   flex: none;
   color: var(--muted);
   cursor: help;
+  transition: color 220ms var(--ease-signature);
+}
+
+/* NDA label + lock icon turn red on hover (Arnav 2026-08-27) — the tooltip
+   pill itself stays --ink/--paper, only the badge's own colour changes.
+   Triggers on hovering ANYWHERE on the card, matching the tooltip-reveal
+   rule below — not just the small badge itself (Arnav: "the nda is not on
+   the card itself just like we did before"). */
+.work-card:hover .work-nda,
+.work-nda:hover,
+.work-nda:focus-visible {
+  color: var(--accent-red);
 }
 
 .work-nda-icon {
@@ -1527,13 +1828,22 @@ body {
   place-items: center;
 }
 
-/* Pops at the lock's BOTTOM-LEFT (Arnav 2026-07-31). `right: 0` anchors the
-   pill's right edge to the lock, so it grows leftwards and never overflows the
-   card's right edge. */
+/* Follows the cursor anywhere over the card (Arnav 2026-08-26) — was pinned
+   to the lock's bottom-left corner. `.work-card`'s onMouseMove handler writes
+   --work-nda-x/--work-nda-y (px, top-left relative to the card) on every
+   move; this rule reads them via `top`/`left` and nudges up-and-centred with
+   `translate` so the pill sits just above the cursor rather than under it.
+   Fallback position (--work-nda-x/-y unset) sits at the card's top-left
+   corner — a harmless resting spot for the brief window before the first
+   mousemove fires, and the only position it will ever reach on touch devices,
+   where mousemove never fires and the tooltip's opacity never goes above 0
+   anyway (see the :hover rule below). Positioned relative to .work-card now
+   that it tracks the whole card's surface, not just the badge. */
 .work-nda-tip {
   position: absolute;
-  top: calc(100% + 7px);
-  right: 0;
+  top: var(--work-nda-y, 0px);
+  left: var(--work-nda-x, 0px);
+  translate: -50% calc(-100% - 12px);
   z-index: 3;
   padding: 5px 9px;
   border-radius: 6px;
@@ -1543,6 +1853,9 @@ body {
   font-weight: 400;
   font-size: 10.5px;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 320ms var(--ease-signature);
@@ -1558,8 +1871,9 @@ body {
 }
 
 .work-cta {
-  display: inline-block;
-  margin-top: clamp(22px, 3vh, 32px);
+  display: flex;
+  width: max-content;
+  margin-top: 42px;
   color: var(--muted);
   transition: color 320ms var(--ease-signature);
 }
@@ -1568,10 +1882,99 @@ body {
   color: var(--ink);
 }
 
+/* Text Arrow CTA — reimplemented from Arnav's Framer component (see
+   components/ui/text-arrow-cta.tsx for provenance). Slightly larger than the
+   plain .work-cta it replaces (Arnav 2026-08-26: "increase the size... so
+   the viewer can see it"). */
+/* Locked 2026-08-27 (Arnav, confirmed with a screenshot): rest = arrow right
+   of label, hover = arrow FULLY SWAPS to the left of the label, sliding the
+   whole label width and passing BEHIND the glyphs mid-transit (z-index under
+   the label, isolation on the container scopes that negative z-index to this
+   component instead of dropping the arrow behind the page). The left slot is
+   pre-reserved as permanent padding so the label position and the underline
+   width never change across states — only the arrow's `left` animates,
+   container-relative (`calc(100% - iconWidth)` down to `0`), not a transform
+   percentage (which is relative to the icon's own tiny box and previously
+   stranded it mid-text instead of reaching the far side). */
+.text-arrow-cta {
+  --arrow-slot: calc(var(--arrow-size, 18px) + var(--arrow-gap, 8px));
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  padding-bottom: 2px;
+  padding-left: var(--arrow-slot);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.text-arrow-cta::after {
+  content: "";
+  position: absolute;
+  left: var(--arrow-slot);
+  right: 0;
+  bottom: 0;
+  height: 1.5px;
+  background: var(--arrow-underline-color, currentColor);
+}
+
+.text-arrow-cta-label {
+  position: relative;
+  z-index: 1;
+}
+
+/* `right: 0` for the rest-of-label slot instead of `left: calc(100% - …)` —
+   `right` is exact regardless of container width, where the `100%` version
+   is relative to the CONTAINER's box (padding included) and previously
+   landed the icon mid-label instead of flush after it.
+   `--arrow-gap` was declared but never actually applied to a rest position —
+   both variants sat flush against the label (0px gap) despite the var
+   existing (Arnav caught this: selected-work's rest arrow touched the last
+   letter). Now both rest positions are offset by the gap so there's real
+   breathing room, and both hover positions land fully in the opposite slot
+   (flush 0, since the destination slot already reserves gap+size). */
+/* The container's own width is exactly label+padding-left — the icon is
+   absolutely positioned so it contributes nothing to layout, meaning
+   `right: 0` sits at the LABEL's right edge, not past it. Anchoring by
+   `right` alone (even negative) only guarantees where the icon's right edge
+   lands; the icon's own 18px width then extends back LEFT from there, which
+   is what put it back on top of the label (Arnav caught this: rest-state
+   arrow touching the last letter). Clearing the label requires offsetting
+   by gap+size together, not gap alone. */
+.text-arrow-cta-icon {
+  position: absolute;
+  top: 50%;
+  right: calc(-1 * (var(--arrow-gap, 8px) + var(--arrow-size, 18px)));
+  z-index: -1;
+  color: var(--arrow-icon-color, currentColor);
+  transform: translateY(-50%);
+  transition: right var(--arrow-duration, 320ms) var(--ease-signature),
+    left var(--arrow-duration, 320ms) var(--ease-signature);
+}
+
+.text-arrow-cta:hover .text-arrow-cta-icon,
+.text-arrow-cta:focus-visible .text-arrow-cta-icon {
+  right: calc(100% - var(--arrow-size, 18px));
+}
+
+/* Back means going backward, so the chevron itself points LEFT (`scaleX(-1)`
+   mirrors the one glyph rather than drawing a second path) — but the
+   POSITION journey is identical to the non-reverse variant: rest = right of
+   the label, hover = fully swaps to the left, same box model, same slot,
+   same duration/speed logic. Arnav: it should read "Back ←" at rest and
+   "← Back" on hover, the arrow always pointing backward while it travels
+   forward-then-back across the label like the other CTA. */
+.text-arrow-cta--reverse .text-arrow-cta-icon {
+  transform: translateY(-50%) scaleX(-1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .work-card,
   .work-nda-tip,
-  .work-cta {
+  .work-cta,
+  .text-arrow-cta-icon {
     transition: none;
   }
 }
@@ -1590,7 +1993,8 @@ body {
   margin-top: 14px;
   font-family: var(--font-display);
   font-size: clamp(28px, 3.2vw, 40px);
-  font-weight: 500;
+  /* H2 — Open Sauce One medium-black (700), typography pass 2026-08-26. */
+  font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
   color: var(--ink);
@@ -1940,9 +2344,10 @@ body {
     position: static;
   }
 
-  /* Phone chrome: hide rails/clock/charm before they sit on copy (was 720 —
-     left a 721–899 hole where opening collapsed but chrome stayed). */
-  .nav-charm,
+  /* Phone chrome: hide rails before they sit on copy (was 720 — left a
+     721–899 hole where opening collapsed but chrome stayed). The charm moved
+     into the footer 2026-08-27, so it's no longer fixed chrome that can
+     collide with page content — nothing to hide here for it anymore. */
   .experience-hint,
   .section-rails {
     display: none;
@@ -1950,7 +2355,9 @@ body {
   .nav-shell {
     padding-inline: 16px;
   }
-  .nav-shell .type-time {
+  /* TimeWidget now only lives in .nav-plain-bar (/how-i-work) — the home
+     pill (.nav-shell) dropped it entirely 2026-08-27. */
+  .nav-plain-bar .type-time {
     display: none;
   }
   .nav-link {
@@ -2303,10 +2710,14 @@ body {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--paper);
-  color: var(--ink-soft);
+  /* Bolded + full ink 2026-08-28 (Arnav, screenshot: "English should be
+     bolded so user can see if they want to change the language") — at
+     ink-soft/500 it read as inert label text, not a control offering a
+     choice. */
+  color: var(--ink);
   font-family: var(--font-mono);
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: 0.04em;
   transition: border-color var(--dur-micro) var(--ease-signature),
     color var(--dur-micro) var(--ease-signature),
@@ -2520,7 +2931,10 @@ body {
   gap: 14px;
   font-family: var(--font-display);
   font-size: 14.5px;
-  font-weight: 500;
+  /* Reduced from 500 (Arnav 2026-08-26: widget copy read "too bold" — bold
+     stays only where it's doing real work, the language switcher and
+     question-related UI). */
+  font-weight: 400;
   line-height: 1.55;
   letter-spacing: -0.01em;
 }
@@ -2528,7 +2942,8 @@ body {
 .agent-greeting {
   white-space: pre-line;
   color: var(--ink);
-  font-weight: 600;
+  /* Reduced from 600, same pass as .agent-scroll above. */
+  font-weight: 400;
   line-height: 1.5;
   /* First thing every visitor sees — keep it tight over the suggestions. */
   margin: 0;
@@ -2562,9 +2977,24 @@ body {
 }
 
 .agent-suggestions button:hover {
-  border-color: var(--ink);
+  /* --accent-blue, not --ink (Arnav 2026-08-28: hover on the suggestion
+     chips "turns black... does not go with it") — matches the same blue
+     used elsewhere on the site for a hover accent (.scramble-word:hover on
+     the hero's "Arnav" text, the agent's send button), instead of a flat
+     black border that reads as an unrelated, harsher color shift. */
+  border-color: var(--accent-blue);
   background: color-mix(in srgb, var(--paper) 82%, var(--muted));
   transform: translateY(-1px);
+}
+
+/* Keyboard focus gets the same treatment as hover, not the browser's native
+   blue focus ring — this file has no prior :focus-visible rule for these
+   buttons, so an unstyled focus outline could read as an unrelated "blue" on
+   top of hover, then flip to the coded black border once :hover also
+   applied. Explicit rule removes that ambiguity either way. */
+.agent-suggestions button:focus-visible {
+  outline: none;
+  border-color: var(--accent-blue);
 }
 
 .agent-suggestions button:disabled {
@@ -2614,7 +3044,9 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-size: 14px;
-  font-weight: 500;
+  /* Reduced from 500, same pass as .agent-scroll — Ted's actual answers are
+     body copy, not the bold-worthy UI (language/questions). */
+  font-weight: 400;
 }
 
 /* `.agent-caret` + `agent-blink` were DELETED 2026-08-15. The blinking block
@@ -3040,7 +3472,12 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--ink);
+  /* --accent-blue, not --blue-cred (Arnav 2026-08-28, corrected: "the blue
+     color that we are using in scramble-name.tsx" — that's the hover state
+     on the hero's "Arnav" text, .scramble-word:hover in this file, which
+     uses --accent-blue). First pass guessed --blue-cred (credibility
+     chips) — wrong token, this is the one Arnav actually meant. */
+  background: var(--accent-blue);
   color: var(--paper);
   font-size: 14px;
   font-weight: 600;

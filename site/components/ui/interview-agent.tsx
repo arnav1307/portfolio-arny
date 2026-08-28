@@ -68,6 +68,15 @@ type AudioState = "idle" | "loading" | "playing";
 const STORAGE_KEY = "arnav-agent-asked";
 
 /**
+ * Fired by any component that wants to open the panel from outside this
+ * widget — currently just the underlined "Ted" in about-hero.tsx. A plain
+ * window event rather than context/props: InterviewAgent mounts once in
+ * providers.tsx, outside the routed tree, so there is no shared ancestor
+ * with about-hero.tsx to thread a prop through.
+ */
+export const OPEN_AGENT_EVENT = "arnav-agent-open";
+
+/**
  * Persisted counter. Was a bare number, which never expired — a capped visitor
  * stayed capped forever on that browser. Now it carries the timestamp of the
  * FIRST question so the 72h window (RESET_MS, agent-prompt.ts) can be measured.
@@ -266,19 +275,36 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
    * The matching WRITE lives in ask(). Writing from an effect would fire once
    * with the pre-hydration value and clobber the saved count.
    */
-  const toggle = useCallback(() => {
-    if (!synced.current) {
-      synced.current = true;
-      // readAsked() also clears an expired entry, so a returning visitor past
-      // the 72h window lands here with three fresh questions and no stale date.
-      const saved = readAsked();
-      if (saved && saved.n > 0) {
-        setAsked(Math.min(saved.n, QUESTION_LIMIT));
-        setAskedAt(saved.at);
-      }
+  const syncAskedOnce = useCallback(() => {
+    if (synced.current) return;
+    synced.current = true;
+    // readAsked() also clears an expired entry, so a returning visitor past
+    // the 72h window lands here with three fresh questions and no stale date.
+    const saved = readAsked();
+    if (saved && saved.n > 0) {
+      setAsked(Math.min(saved.n, QUESTION_LIMIT));
+      setAskedAt(saved.at);
     }
-    setOpen((v) => !v);
   }, []);
+
+  const toggle = useCallback(() => {
+    syncAskedOnce();
+    setOpen((v) => !v);
+  }, [syncAskedOnce]);
+
+  /**
+   * External open trigger — see OPEN_AGENT_EVENT above. Unconditionally opens
+   * (not a toggle) so a second click on "Ted" while the panel is already open
+   * doesn't close it.
+   */
+  useEffect(() => {
+    const onExternalOpen = () => {
+      syncAskedOnce();
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_AGENT_EVENT, onExternalOpen);
+    return () => window.removeEventListener(OPEN_AGENT_EVENT, onExternalOpen);
+  }, [syncAskedOnce]);
 
   /**
    * Reveal the launcher once the hero is out of the way.

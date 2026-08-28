@@ -34,19 +34,6 @@ export const TOOLS = [
   "JavaScript",
 ] as const;
 
-// ── Credibility chips shown on home = 2 blue (Published Research moved to /about per v3). ──
-export const CRED_CHIPS = [
-  "AWS Solutions Architect",
-  "Microsoft AI Agent Builder Associate",
-] as const;
-
-// ── Greeting cycle: Hindi → English → Dutch (Arnav's three worlds). tokens.md §Greeting cycle ──
-export const GREETINGS = [
-  { text: "नमस्कार", font: "devanagari" as const },
-  { text: "Hello", font: "display" as const },
-  { text: "Hoi", font: "display" as const },
-] as const;
-
 // ── Hero corner captions (clustered center). ──
 export const HERO_CAPTIONS = ["DATA", "PRODUCT", "AI"] as const;
 
@@ -77,7 +64,7 @@ export const WORK_WITH_ME = {
 export const FOOTER_NAV = {
   name: "Arnav.",
   /** Second line under the name — ss7. Deliberately literal about the site. */
-  tagline: "made with zero em dashes",
+  tagline: "Made with zero em dashes",
   poweredBy: "Powered by Claude, Cursor & Caffeine 🧑🏻‍💻",
 } as const;
 
@@ -85,19 +72,19 @@ export const FOOTER_NAV = {
 export const DESK_OBJECTS = [
   {
     id: "folder",
-    label: "WORK",
+    label: "Work",
     asset: "/assets/desk/folder.png",
     href: CONTACT.resumeDrive,
   },
   {
     id: "phone",
-    label: "CONTACT",
+    label: "Contact",
     asset: "/assets/desk/phone.png",
     href: `mailto:${CONTACT.email}`,
   },
   {
     id: "coffee",
-    label: "LINKEDIN",
+    label: "LinkedIn",
     asset: "/assets/desk/coffee.png",
     href: CONTACT.linkedin,
   },
