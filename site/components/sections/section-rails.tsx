@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { CONTACT } from "@/lib/data";
+import { useAmsterdamTime } from "@/lib/use-amsterdam-time";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -80,6 +81,8 @@ export function SectionRails() {
     };
   }, []);
 
+  const time = useAmsterdamTime();
+
   return (
     <div
       ref={root}
@@ -87,8 +90,13 @@ export function SectionRails() {
       className="section-rails pointer-events-none fixed inset-x-0 bottom-0 z-[90]"
       style={{ top: "var(--nav-h)" }}
     >
+      {/* Not uppercase (Arnav 2026-08-27: "Amsterdam, Netherlands instead of
+          caps") — `.type-label` forces text-transform:uppercase globally, so
+          this needs its own override rather than relying on the shared
+          class's default (removing it there would affect every eyebrow/tag
+          on the site). See `.section-rails .rail-city` in globals.css. */}
       <span
-        className="type-label absolute whitespace-nowrap text-muted"
+        className="type-label rail-city absolute whitespace-nowrap text-muted"
         style={{
           left: RAIL.inset,
           top: RAIL.amsterdamCenter,
@@ -96,9 +104,12 @@ export function SectionRails() {
           transformOrigin: "left center",
         }}
       >
-        {CONTACT.location.city.toUpperCase()}, NETHERLANDS
+        {CONTACT.location.city}, Netherlands
       </span>
 
+      {/* "2026 ©" moved to the footer, under Arnav. (Arnav 2026-08-27) — this
+          slot now shows the live Amsterdam clock instead, matching the nav's
+          own TimeWidget. */}
       <span
         className="type-label absolute whitespace-nowrap text-muted"
         style={{
@@ -108,7 +119,8 @@ export function SectionRails() {
           transformOrigin: "left center",
         }}
       >
-        2026 <span style={{ fontFamily: "var(--font-display)" }}>©</span>
+        <span className="tabular-nums">{time ?? "--:--:--"}</span>{" "}
+        {CONTACT.location.label}
       </span>
     </div>
   );

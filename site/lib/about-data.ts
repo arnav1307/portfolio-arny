@@ -169,7 +169,7 @@ export const ABOUT_SECTIONS = [
     body: [
       "AI didn't replace the way I work, it extended it past where it used to stop. I can hold the whole line myself now, from the strategy to the thing that ships.",
       "This page is a small proof of it. I designed the entire site in Framer first, every section and every state, before a line of it existed as code. Then I rebuilt it in Next.js by directing AI: I set the direction, wrote the rules down once so the agent stayed on them, reviewed every output honestly, and re-specified whenever it drifted. The design was mine before the code was.",
-      "The agents mostly did what I asked, occasionally what they thought I meant, and once in a while something I still can't explain. You can meet him as he's walking underneath and on the home page as well. I call him Ted.",
+      "The agents mostly did what I asked, occasionally what they thought I meant, and once in a while something I still can't explain. You can meet and talk to him as he's walking underneath and on the home page as well. I call him Ted.",
     ],
   },
 ] as const;

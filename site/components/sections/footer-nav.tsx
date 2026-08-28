@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { FOOTER_NAV } from "@/lib/data";
+import { NavCharm } from "@/components/ui/nav-charm";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -55,11 +56,25 @@ export function FooterNav() {
 
   return (
     <footer ref={band} className="footer-band">
-      <span className="footer-nav-name">{FOOTER_NAV.name}</span>
+      <div className="footer-name-stack">
+        <span className="footer-nav-name">{FOOTER_NAV.name}</span>
+        {/* Moved from the opening's vertical rail (Arnav 2026-08-27: "2026 C
+            can be moved under Arnav in the footer") — that rail slot now
+            shows the live clock instead (section-rails.tsx). */}
+        <span className="footer-nav-sub">
+          2026 <span style={{ fontFamily: "var(--font-display)" }}>©</span>
+        </span>
+      </div>
 
-      <div className="footer-stack">
-        <span className="footer-nav-sub">{FOOTER_NAV.poweredBy}</span>
-        <span className="footer-nav-sub">{FOOTER_NAV.tagline}</span>
+      <div className="footer-right">
+        {/* Charm hangs above "Powered by" (Arnav 2026-08-27: "make it look
+            like it is hanging over there") — moved out of the fixed nav
+            chrome entirely, see nav-charm.tsx for why. */}
+        <NavCharm />
+        <div className="footer-stack">
+          <span className="footer-nav-sub">{FOOTER_NAV.poweredBy}</span>
+          <span className="footer-nav-sub">{FOOTER_NAV.tagline}</span>
+        </div>
       </div>
     </footer>
   );

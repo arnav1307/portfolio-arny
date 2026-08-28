@@ -44,8 +44,8 @@ export function Contact() {
       </p>
 
       <div className="contact-book">
-        <h2 className="type-label text-muted">{WORK_WITH_ME.eyebrow}</h2>
-        <p className="contact-book-title">{WORK_WITH_ME.title}</p>
+        <p className="type-label section-eyebrow text-muted">{WORK_WITH_ME.eyebrow}</p>
+        <h2 className="contact-book-title">{WORK_WITH_ME.title}</h2>
         <p className="contact-book-blurb">{WORK_WITH_ME.blurb}</p>
 
         <CalEmbed />

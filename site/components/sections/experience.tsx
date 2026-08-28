@@ -134,8 +134,8 @@ export function Experience() {
       <div className="experience-inner">
         <div className="experience-head">
           <div>
-            <h2 className="type-label text-muted">{EXPERIENCE_COPY.eyebrow}</h2>
-            <p className="experience-title">{EXPERIENCE_COPY.title}</p>
+            <p className="type-label section-eyebrow text-muted">{EXPERIENCE_COPY.eyebrow}</p>
+            <h2 className="experience-title">{EXPERIENCE_COPY.title}</h2>
           </div>
 
           {/* The list ⇄ timeline toggle was REMOVED 2026-07-31 (Arnav): the

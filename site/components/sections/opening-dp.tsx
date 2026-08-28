@@ -104,6 +104,16 @@ type GridItem = {
   slot: number;
   /** Clean-state rotation in degrees. ss12's objects all sit slightly askew. */
   tilt: number;
+  /**
+   * Marks the LCP candidate. Next.js flagged img-11.png specifically (it's
+   * the largest object in the grid, 283×283) as the Largest Contentful Paint
+   * element and asked for eager loading. `priority` is the one field to set
+   * — it implies eager + adds a preload hint, and must NOT be combined with
+   * `loading="eager"` (Next treats the two as conflicting). Only this one
+   * item gets it; blanket-applying priority to all 16 images would defeat
+   * lazy-loading for the other 15.
+   */
+  priority?: boolean;
 };
 
 /**
@@ -121,23 +131,23 @@ const SIZE_SCALE = 0.85;
  * clipped by the edge.
  */
 const GRID_ITEMS: GridItem[] = [
-  { file: "img-15.png", left: 288, top: 114, w: 152, h: 151, side: "left", slot: 0.06, tilt: -8 },
-  { file: "img-09.png", left: 195, top: 306, w: 144, h: 144, side: "left", slot: 0.22, tilt: 6 },
-  { file: "img-03.png", left: 383, top: 285, w: 195, h: 195, side: "left", slot: 0.38, tilt: -5 },
-  { file: "img-11.png", left: 160, bottom: 318, w: 283, h: 283, side: "left", slot: 0.55, tilt: 7 },
+  { file: "img-15.png", left: 288, top: 114, w: 152, h: 151, side: "left", slot: 0.03, tilt: -8 },
+  { file: "img-09.png", left: 130, top: 290, w: 144, h: 144, side: "left", slot: 0.22, tilt: 6 },
+  { file: "img-03.png", left: 383, top: 285, w: 195, h: 195, side: "left", slot: 0.4, tilt: -5 },
+  { file: "img-11.png", left: 160, bottom: 318, w: 283, h: 283, side: "left", slot: 0.55, tilt: 7, priority: true },
   { file: "img-07.png", left: 310, bottom: 122, w: 171, h: 171, side: "left", slot: 0.71, tilt: -9 },
-  { file: "img-10.png", left: 629, top: 305, w: 210, h: 225, side: "left", slot: 0.86, tilt: 5 },
+  { file: "img-10.png", left: 629, top: 295, w: 210, h: 225, side: "left", slot: 0.86, tilt: 5 },
   { file: "img-14.png", left: 505, bottom: 225, w: 100, h: 100, side: "left", slot: 0.8, tilt: -6 },
-  { file: "img-04.png", left: 634, bottom: 31, w: 207, h: 368, side: "left", slot: 0.14, tilt: 9 },
+  { file: "img-04.png", left: 634, bottom: 20, w: 207, h: 368, side: "left", slot: 0.14, tilt: 9 },
 
-  { file: "img-16.png", left: 1100, top: 30, w: 143, h: 143, side: "right", slot: 0.05, tilt: 7 },
-  { file: "img-13.png", left: 1210, top: 100, w: 196, h: 196, side: "right", slot: 0.19, tilt: -6 },
+  { file: "img-16.png", left: 1100, top: 30, w: 143, h: 143, side: "right", slot: 0.08, tilt: 7 },
+  { file: "img-13.png", left: 1210, top: 100, w: 196, h: 196, side: "right", slot: 0.14, tilt: -6 },
   { file: "img-08.png", left: 959, top: 177, w: 185, h: 232, side: "right", slot: 0.34, tilt: 8 },
   { file: "img-06-folder.png", left: 795, top: 124, w: 125, h: 125, side: "right", slot: 0.48, tilt: -7 },
   { file: "img-02.png", left: 1289, top: 380, w: 138, h: 316, side: "right", slot: 0.62, tilt: 5 },
-  { file: "img-12.png", left: 1050, bottom: 320, w: 174, h: 172, side: "right", slot: 0.76, tilt: -8 },
+  { file: "img-12.png", left: 1050, bottom: 300, w: 174, h: 172, side: "right", slot: 0.76, tilt: -8 },
   { file: "img-05.png", left: 850, bottom: 220, w: 151, h: 151, side: "right", slot: 0.88, tilt: 6 },
-  { file: "img-01.png", left: 1270, bottom: 120, w: 170, h: 170, side: "right", slot: 0.98, tilt: -5 },
+  { file: "img-01.png", left: 1270, bottom: 120, w: 170, h: 170, side: "right", slot: 0.93, tilt: -5 },
 ];
 
 /** DP's four text slots, wording VERBATIM (Arnav confirmed 2026-08-02). */
@@ -145,7 +155,7 @@ const DP_TEXT = {
   intro: ["The world is", "full of"],
   midLeft: "thousands of stats",
   midRight: "& quiet insights",
-  closing: ["I build the design", "that makes them speak"],
+  closing: ["I build the system", "that makes them speak"],
 } as const;
 
 const pct = (px: number, total: number) => `${(px / total) * 100}%`;
@@ -163,11 +173,23 @@ const pct = (px: number, total: number) => `${(px / total) * 100}%`;
  * to its side's edge — not a flat push.
  */
 /**
+ * Fraction of the object's own width that stays ON-stage past the viewport
+ * edge in clean mode. 0.5 (the original spec) put the centre exactly on the
+ * edge, cropping half of every object — Arnav 2026-08-27, screenshot
+ * comparison against ss12: "nothing is visible... I need them to be visible
+ * when they are moved aside." ss12's edge objects read almost fully intact
+ * with only a sliver actually cut, so this pulls the target inward instead
+ * of reversing the direction entirely (still reads as "hugging the edge",
+ * just not eating half the artwork to do it).
+ */
+const EDGE_VISIBLE_FRACTION = 0.85;
+
+/**
  * Clean-state target for one object, in px relative to its own chaos position.
  *
  * ss12 hugs the VIEWPORT edges, not the board's, so this measures against the
- * stage rect. Each object's centre lands on its screen edge (half in, half out)
- * at its authored vertical slot.
+ * stage rect. Each object's centre lands near its screen edge (mostly
+ * visible, only a sliver cropped) at its authored vertical slot.
  *
  * Measured at build time from live rects rather than derived from constants:
  * the board is a clamped `min()` box, so its on-screen size is not knowable
@@ -177,7 +199,8 @@ function cleanTarget(el: HTMLElement, item: GridItem, stage: DOMRect) {
   const r = el.getBoundingClientRect();
   const restCentreX = r.left + r.width / 2 - stage.left;
   const restCentreY = r.top + r.height / 2 - stage.top;
-  const edgeX = item.side === "left" ? 0 : stage.width;
+  const inset = r.width * EDGE_VISIBLE_FRACTION;
+  const edgeX = item.side === "left" ? inset : stage.width - inset;
   // Keep the object fully on-stage vertically even at the extreme slots.
   const targetY = item.slot * (stage.height - r.height) + r.height / 2;
   return {
@@ -248,29 +271,18 @@ export function OpeningDP() {
       triggerRef.current = tl.scrollTrigger ?? null;
       timelineRef.current = tl;
 
-      const stageRect = stage.getBoundingClientRect();
-      objects.forEach((el, i) => {
-        const item = GRID_ITEMS[i];
-        if (!item) return;
-        const target = cleanTarget(el, item, stageRect);
-        tl.to(
-          el,
-          {
-            x: target.x,
-            y: target.y,
-            rotation: target.rotation,
-            ease: "power2.inOut",
-          },
-          0,
-        );
-      });
-
       // Captions vanish on the way out and return on the way back (scrub).
       captions.forEach((el) => {
         tl.to(el, { opacity: 0, ease: "power1.in", duration: 0.45 }, 0);
       });
 
-      if (dither) tl.to(dither, { opacity: 0.25, ease: "power1.in" }, 0);
+      /* Fully to 0, not 0.25 (Arnav 2026-08-27: "in clean mode there is
+         still a line visible... making it look weird"). At 0.25 the grid's
+         own bounded rectangle — visible as a seam/edge once every object has
+         cleared away from the board's centre in clean mode — read as a
+         stray line rather than texture. Chaos mode still shows the full grid
+         via the timeline's reverse (this only affects the clean-mode end). */
+      if (dither) tl.to(dither, { opacity: 0, ease: "power1.in" }, 0);
 
       tl.to(
         centerLayer,
@@ -279,7 +291,38 @@ export function OpeningDP() {
       );
     });
 
-    const refresh = requestAnimationFrame(() => ScrollTrigger.refresh());
+    /* Object x/y targets are measured off `stage.getBoundingClientRect()`,
+       but at this synchronous point in useLayoutEffect the pinned stage can
+       still report a zero/degenerate box (the pin's own height/position
+       rewrite hasn't settled yet). Rotation-only tweens (which only depend
+       on `item.tilt`, never on the stage rect) applied fine while x/y stayed
+       stuck at 0 — confirmed live, all 16 objects, before this fix. Deferring
+       the rect read (and the tween creation that depends on it) to the same
+       rAF that already calls ScrollTrigger.refresh() lets layout settle
+       first. Adding tweens to `tl` after its own creation is fine — GSAP
+       doesn't require every tween to exist before the timeline is used. */
+    const refresh = requestAnimationFrame(() => {
+      const stageRect = stage.getBoundingClientRect();
+      const tl = timelineRef.current;
+      if (tl) {
+        objects.forEach((el, i) => {
+          const item = GRID_ITEMS[i];
+          if (!item) return;
+          const target = cleanTarget(el, item, stageRect);
+          tl.to(
+            el,
+            {
+              x: target.x,
+              y: target.y,
+              rotation: target.rotation,
+              ease: "power2.inOut",
+            },
+            0,
+          );
+        });
+      }
+      ScrollTrigger.refresh();
+    });
 
     return () => {
       cancelAnimationFrame(refresh);
@@ -339,14 +382,6 @@ export function OpeningDP() {
         className="relative w-full overflow-hidden"
         style={{ height: "100svh", background: STAGE_BG }}
       >
-        {/* Horizontal rule under nav — same as classic Opening. Charm hangs
-            off this line (Arnav 2026-07-31). Was missing on OpeningDP. */}
-        <div
-          aria-hidden
-          className="nav-divider absolute inset-x-0 z-30"
-          style={{ top: "var(--nav-h)" }}
-        />
-
         {/* ── One board: dither BEHIND objects via isolation + negative z ──
             Sibling BOARD_BOX layers fought stacking under GSAP pin; keep field
             + objects in the SAME stacking context so dots can't paint over art.
@@ -379,6 +414,7 @@ export function OpeningDP() {
             <DotField
               {...DITHER}
               cursorForce={imageHovered ? 1.6 : DITHER.cursorForce}
+              style={{ opacity: 0.3 }}
             />
           </div>
 
@@ -421,6 +457,7 @@ export function OpeningDP() {
                       fill
                       sizes="18vw"
                       unoptimized
+                      priority={item.priority === true}
                       className="object-contain"
                     />
                   )}
@@ -433,7 +470,7 @@ export function OpeningDP() {
               data-dp-caption
               className={captionClass}
               style={{
-                left: pct(508, BOX_W),
+                left: pct(500, BOX_W),
                 top: pct(141, BOX_H),
                 background: STAGE_BG,
               }}
@@ -445,7 +482,7 @@ export function OpeningDP() {
               data-dp-caption
               className={captionClass}
               style={{
-                left: pct(900, BOX_W),
+                left: pct(870, BOX_W),
                 top: pct(494, BOX_H),
                 background: STAGE_BG,
               }}
@@ -457,8 +494,8 @@ export function OpeningDP() {
               data-dp-caption
               className={captionClass}
               style={{
-                left: pct(400, BOX_W),
-                bottom: pct(479, BOX_H),
+                left: pct(380, BOX_W),
+                bottom: pct(449, BOX_H),
                 background: STAGE_BG,
               }}
             >
@@ -493,15 +530,26 @@ export function OpeningDP() {
 
         </div>
 
-        {/* ── Mode toggles: emoji discs, label on hover. Outside the centre
-            layer so the scrub's opacity tween never hides them. ── */}
+        {/* ── Mode toggles: icon buttons (Arnav 2026-08-27, replacing the
+            text-pill treatment) — puzzle = Chaos Mode, broom = Clean Mode,
+            per inspiration/ss11.png. Hover reveals a dark tooltip pill
+            reading "Chaos Mode on" / "Clean Mode on", same visual language
+            as the NDA tooltip. Click behaviour (goToMode) is unchanged.
+            Outside the centre layer so the scrub's opacity tween never hides
+            them. ── */}
         <div className="absolute inset-x-0 bottom-8 z-20 flex items-center justify-center gap-3">
           {(
             [
-              { id: "chaos" as const, emoji: "🎲", tip: "chaos mode" },
-              { id: "clean" as const, emoji: "🧹", tip: "clean mode" },
+              { id: "chaos" as const, label: "Chaos Mode on", icon: "puzzle.svg", scale: 1 },
+              /* broom.png's actual artwork sits inside a wide transparent
+                 margin on its 50×50 canvas (puzzle.svg's path fills nearly
+                 the whole viewBox) — at the same mask-size the broom read
+                 visibly smaller (Arnav 2026-08-27: "increase the size of the
+                 broom... to match it with the size of the puzzle"). Scaling
+                 the mask up compensates for the source padding difference. */
+              { id: "clean" as const, label: "Clean Mode on", icon: "broom.png", scale: 1.55 },
             ] as const
-          ).map(({ id, emoji, tip }) => {
+          ).map(({ id, label, icon, scale }) => {
             const on = mode === id;
             return (
               <button
@@ -509,9 +557,9 @@ export function OpeningDP() {
                 type="button"
                 onClick={() => goToMode(id)}
                 data-cursor="pointer"
-                aria-label={tip}
+                aria-label={label}
                 aria-pressed={on}
-                className="group relative grid size-11 place-items-center rounded-full border text-[1.15rem] leading-none transition-[background-color,border-color,color,transform] duration-300"
+                className="opening-dp-mode-btn relative flex size-11 items-center justify-center rounded-xl border transition-[background-color,border-color] duration-300"
                 style={
                   on
                     ? {
@@ -521,21 +569,25 @@ export function OpeningDP() {
                           "color-mix(in srgb, var(--paper) 40%, var(--muted))",
                         borderColor:
                           "color-mix(in srgb, var(--paper) 40%, var(--muted))",
-                        color: "var(--ink)",
                       }
                     : {
                         background: "var(--paper-raised)",
                         borderColor: "var(--line)",
-                        color: "var(--ink)",
                       }
                 }
               >
-                <span aria-hidden>{emoji}</span>
                 <span
-                  className="pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 z-[3] -translate-x-1/2 whitespace-nowrap rounded-md px-2.5 py-1 font-mono text-[10.5px] font-normal uppercase tracking-[0.08em] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
-                  style={{ background: "var(--ink)", color: "var(--paper)" }}
-                >
-                  {tip}
+                  aria-hidden="true"
+                  className="opening-dp-mode-icon"
+                  style={{
+                    WebkitMaskImage: `url(/assets/opening-dp/${icon})`,
+                    maskImage: `url(/assets/opening-dp/${icon})`,
+                    WebkitMaskSize: `${scale * 100}%`,
+                    maskSize: `${scale * 100}%`,
+                  }}
+                />
+                <span className="opening-dp-mode-tip" role="tooltip">
+                  {label}
                 </span>
               </button>
             );

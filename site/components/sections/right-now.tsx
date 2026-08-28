@@ -358,8 +358,8 @@ export function RightNow() {
     <section id="right-now" className="rightnow-section">
       <div className="rightnow-inner">
         <div className="rightnow-copy">
-          <h2 className="type-label text-muted">RIGHT NOW</h2>
-          <p className="rightnow-title">two dots on a globe</p>
+          <p className="type-label section-eyebrow text-muted">RIGHT NOW</p>
+          <h2 className="rightnow-title">two dots on a globe</h2>
 
           <p className="rightnow-blurb">
             you are reading this from somewhere near{" "}

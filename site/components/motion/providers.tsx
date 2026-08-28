@@ -6,7 +6,6 @@ import { SmoothProvider } from "./smooth-provider";
 import { PageTransition } from "./page-transition";
 import { Cursor } from "@/components/ui/cursor";
 import { Nav } from "@/components/sections/nav";
-import { NavCharm } from "@/components/ui/nav-charm";
 import { InterviewAgent } from "@/components/ui/interview-agent";
 import { SectionRails } from "@/components/sections/section-rails";
 
@@ -24,8 +23,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           #smooth-content, which would drag fixed-position chrome with it. */}
       <PageTransition>
         <Nav />
-        {/* Charm hangs off the nav clock — fixed sibling, home only. */}
-        <NavCharm />
         {pathname === "/" && <SectionRails />}
         {/* Fixed, so it sits out here with the rest of the chrome. It reads
             useSmoother() to scroll to Contact, hence inside PageTransition. */}

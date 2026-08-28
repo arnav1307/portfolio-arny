@@ -32,8 +32,8 @@ export function Stack() {
       className="stack-section flex w-full flex-col items-center justify-center"
     >
       <div className="stack-inner">
-        <h2 className="type-label text-muted">{STACK_COPY.eyebrow}</h2>
-        <p className="stack-title">{STACK_COPY.title}</p>
+        <p className="type-label section-eyebrow text-muted">{STACK_COPY.eyebrow}</p>
+        <h2 className="stack-title">{STACK_COPY.title}</h2>
         <p className="stack-blurb">{STACK_COPY.blurb}</p>
 
         {/* One max-content column so "+ more…" centres against the tiles.

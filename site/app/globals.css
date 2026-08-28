@@ -703,7 +703,7 @@ body {
    the footer band only participates in theme through its own token set. */
 .footer-charm {
   position: absolute;
-  right: 0;
+  right: 1px;
   bottom: calc(100% + 23px);
   width: 1450px;
 }

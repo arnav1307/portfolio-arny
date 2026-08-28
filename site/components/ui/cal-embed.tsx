@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Cal, { getCalApi } from "@calcom/embed-react";
 
 /**
@@ -9,7 +9,7 @@ import Cal, { getCalApi } from "@calcom/embed-react";
  * Config is Arnav's verbatim: namespace "13", calLink "arnav-e4udwr/13",
  * month_view, useSlotsViewOnSmallScreen, and the light/dark cal-brand pair.
  *
- * ⚠️ Two integration constraints, both load-bearing:
+ * ⚠️ Three integration constraints, all load-bearing:
  *   1. This must render INSIDE #smooth-content — it scrolls with the page.
  *      It is mounted from the Contact section, never from providers.tsx.
  *   2. The embed sets its own `overflow: scroll` internally, which can fight
@@ -17,12 +17,47 @@ import Cal, { getCalApi } from "@calcom/embed-react";
  *      scroll context and marks itself data-lenis-prevent / ScrollTrigger-
  *      ignored, so wheel events over the calendar go to the calendar and
  *      everywhere else still goes to the smoother.
+ *   3. The `<Cal>` iframe + its `embed.js` are NOT mounted until this section
+ *      is near the viewport (Arnav 2026-08-28: "sometimes takes a lot of
+ *      time to load"). Confirmed via the iframe's own `loading="auto"` (not
+ *      "lazy") and a bare network check — nothing gated this heavy
+ *      cross-origin load before; it fired on every page mount regardless of
+ *      scroll position, competing with the opening's images/fonts/GSAP for
+ *      bandwidth on a page where Contact is near the bottom. Same
+ *      IntersectionObserver pattern as interview-agent.tsx's launcher reveal,
+ *      for the same reason: no smoother to hang a ScrollTrigger on this deep
+ *      in the tree, and IO survives the pinned/scrubbed OpeningDP with no
+ *      refresh handling since it reads real viewport geometry, not scroll
+ *      progress.
  */
 
 const CAL_LINK = "arnav-e4udwr/13";
 const CAL_NAMESPACE = "13";
 
 export function CalEmbed() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  /** Once true, stays true — the point is to defer the first load, not to
+      tear the iframe down again once a visitor has actually reached it. */
+  const [nearViewport, setNearViewport] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || nearViewport) return;
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setNearViewport(true);
+      },
+      // Starts loading a little before it's actually on screen, so the
+      // calendar is ready by the time a visitor finishes scrolling to it
+      // rather than popping in after.
+      { threshold: 0, rootMargin: "40% 0px" },
+    );
+
+    io.observe(el);
+    return () => io.disconnect();
+  }, [nearViewport]);
+
   /**
    * The embed is REMOUNTED on a theme flip rather than just re-configured.
    * `cal("ui", { theme })` only reliably applies to an embed that has not
@@ -43,6 +78,9 @@ export function CalEmbed() {
   }, []);
 
   useEffect(() => {
+    // Same gate as the mount below — no point pushing theme config at the
+    // Cal API before the embed has ever been asked to load.
+    if (!nearViewport) return;
     let cancelled = false;
     const root = document.documentElement;
 
@@ -67,23 +105,25 @@ export function CalEmbed() {
          */
         cssVarsPerTheme: {
           light: {
-            "cal-brand": "#131211",
+            /* Re-tinted 2026-08-26 to the new cool #F0F5FE/#01060D palette —
+               was the old warm beige/black values (#131211, #f1f0ee, etc). */
+            "cal-brand": "#01060d",
             // The embed's own surfaces. Without these it inherits Cal's default
             // grey, which is what kept reading as "not white" against ss5.
             "cal-bg": "#ffffff",
-            "cal-bg-emphasis": "#f1f0ee",
-            "cal-border": "#e6e3dc",
-            "cal-border-emphasis": "#d5d1c8",
-            "cal-text": "#131211",
-            "cal-text-emphasis": "#131211",
+            "cal-bg-emphasis": "#eef2fa",
+            "cal-border": "#dbe3f0",
+            "cal-border-emphasis": "#c3ced0",
+            "cal-text": "#01060d",
+            "cal-text-emphasis": "#01060d",
           },
           dark: {
-            "cal-brand": "#f3f0e9",
-            "cal-bg": "#1c1a18",
-            "cal-bg-emphasis": "#2a2825",
-            "cal-border": "#2a2825",
-            "cal-text": "#f3f0e9",
-            "cal-text-emphasis": "#f3f0e9",
+            "cal-brand": "#f0f5fe",
+            "cal-bg": "#10161f",
+            "cal-bg-emphasis": "#1a212c",
+            "cal-border": "#1a212c",
+            "cal-text": "#f0f5fe",
+            "cal-text-emphasis": "#f0f5fe",
           },
         },
         hideEventTypeDetails: false,
@@ -104,22 +144,24 @@ export function CalEmbed() {
       cancelled = true;
       observer.disconnect();
     };
-  }, []);
+  }, [nearViewport]);
 
   return (
-    <div className="cal-embed" data-lenis-prevent>
-      <Cal
-        /* Remounts on a theme flip — see the note above. */
-        key={theme}
-        namespace={CAL_NAMESPACE}
-        calLink={CAL_LINK}
-        style={{ width: "100%", height: "100%", overflow: "scroll" }}
-        config={{
-          layout: "month_view",
-          useSlotsViewOnSmallScreen: "true",
-          theme,
-        }}
-      />
+    <div ref={containerRef} className="cal-embed" data-lenis-prevent>
+      {nearViewport && (
+        <Cal
+          /* Remounts on a theme flip — see the note above. */
+          key={theme}
+          namespace={CAL_NAMESPACE}
+          calLink={CAL_LINK}
+          style={{ width: "100%", height: "100%", overflow: "scroll" }}
+          config={{
+            layout: "month_view",
+            useSlotsViewOnSmallScreen: "true",
+            theme,
+          }}
+        />
+      )}
     </div>
   );
 }
