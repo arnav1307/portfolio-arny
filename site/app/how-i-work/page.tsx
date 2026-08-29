@@ -12,8 +12,15 @@ import { FooterNav } from "@/components/sections/footer-nav";
  * the clash. /about redirects here permanently (next.config.ts) so any link
  * already shared still resolves.
  */
+/**
+ * No `title` here (Arnav 2026-08-28: the browser tab read "Arny" on home and
+ * "How I..." here — "should stay consistent"). The root layout's bare string
+ * title ("Arny", app/layout.tsx) is fully REPLACED by any page-level title,
+ * not merged with it — that's Next's default metadata behavior without a
+ * `title.template`/`title.default` pair at the root. Omitting title here
+ * lets this page inherit the root's, same as every other route already does.
+ */
 export const metadata: Metadata = {
-  title: "How I work — Arnav Gupta",
   description:
     "Can one person own the whole line, from idea to shipped? A case study on building with AI end to end.",
 };

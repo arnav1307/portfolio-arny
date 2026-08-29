@@ -40,12 +40,30 @@ export function OpeningHeroContent() {
         <ScrambleName />
       </h1>
 
+      {/* Mobile-only crab (Arnav 2026-08-29): the statement wraps to multiple
+          lines below 900px (.opening-hero-statement in globals.css), so the
+          desktop crab's absolute mid-sentence placement lands wherever that
+          wrap happens to fall — reads as floating in the wrong spot. On
+          mobile it sits as its own block above the statement instead; the
+          inline desktop version is hidden there via .opening-hero-crab-inline. */}
+      <span
+        className="pixel-crab-hover pixel-crab-hover--mobile mt-6 hidden"
+        tabIndex={0}
+        data-cursor="pointer"
+        aria-label="Pixel crab says: Hi, I'm Ted!"
+      >
+        <span aria-hidden className="pixel-crab-message">
+          Hi, I&apos;m Ted!
+        </span>
+        <PixelCrab size={30} className="block" />
+      </span>
+
       {/* Ownership statement — H2 (typography pass 2026-08-26). font-medium
           (500) = bit bolder than body 400; title stays optically heavier via
           size. Crab is absolute so it takes NO gap in the line. */}
       <h2 className="opening-hero-statement font-display mt-15 max-w-[540px] text-[21.25px] font-medium leading-relaxed tracking-[-0.03em] text-muted">
         {STATEMENT_HEAD}
-        <span className="relative inline-block w-0 align-baseline">
+        <span className="opening-hero-crab-inline relative inline-block w-0 align-baseline">
           <span
             className="pixel-crab-hover absolute bottom-full left-1/2 mb-5 -translate-x-1/2"
             tabIndex={0}

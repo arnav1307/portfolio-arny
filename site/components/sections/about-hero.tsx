@@ -292,20 +292,18 @@ export function AboutHero() {
                   </p>
                 ))}
 
-                {/* Arrows instead of bullet discs (Arnav 2026-08-27), cherry
-                    red — same glyph/colour pairing as Selected Work's
-                    one-liner arrow. */}
+                {/* Simple dot bullets, cherry red (Arnav 2026-08-28: "the
+                    arrows are weird" — replaces the ↳ glyph tried
+                    2026-08-27). Plain circle reads as a bullet at a glance;
+                    the arrow read as a stray direction cue instead. */}
                 {"bullets" in section && section.bullets && (
                   <ul className="about-body flex flex-col gap-2">
                     {section.bullets.map((bullet) => (
-                      <li key={bullet} className="flex gap-2">
+                      <li key={bullet} className="flex items-baseline gap-2">
                         <span
                           aria-hidden="true"
-                          className="shrink-0"
-                          style={{ color: "var(--accent-red)" }}
-                        >
-                          ↳
-                        </span>
+                          className="about-bullet-dot shrink-0"
+                        />
                         <span>{bullet}</span>
                       </li>
                     ))}

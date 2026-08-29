@@ -44,7 +44,7 @@ export const ABOUT_FACTS = [
   { label: "STATUS", value: "Shipped", status: true },
   {
     label: "IMPACT",
-    value: "137 commits, 7 PRs, 3.4M tokens burned, Live deployed portfolio",
+    value: "137 commits, 7 PRs, 8.4M tokens burned, Live deployed portfolio",
   },
   {
     label: "BEST FIT ROLES",

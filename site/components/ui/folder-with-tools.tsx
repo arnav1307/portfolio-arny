@@ -90,11 +90,18 @@ export function FolderWithTools({ className }: FolderWithToolsProps) {
           alt=""
           width={64}
           height={64}
-          className="pointer-events-none absolute h-auto"
+          className="pointer-events-none absolute"
           style={{
             left: pos.left,
             top: pos.top,
             width: pos.width,
+            /* Next.js's own aspect-ratio check reads the `style` prop, not a
+               Tailwind class — `h-auto` alone (2026-08-28 console warning:
+               "has either width or height modified, but not the other")
+               didn't satisfy it even though the rendered CSS was identical.
+               Inline height: "auto" is what the warning's own message asks
+               for literally. */
+            height: "auto",
             zIndex: pos.z,
             transform: `rotate(${pos.rotate}deg)`,
             filter,

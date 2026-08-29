@@ -383,6 +383,8 @@ body {
      forced caps. */
   .desk-status-label {
     text-transform: none;
+    font-size: 14px;
+    font-weight: 400;
   }
   .type-time {
     font-family: var(--font-mono);
@@ -871,11 +873,23 @@ body {
   /* Body copy */
   .about-body {
     font-family: var(--font-display);
-    font-size: 16px;
+    font-size: 14.5px;
     font-weight: 400;
     line-height: 1.65;
     color: var(--ink-soft);
     max-width: 68ch;
+  }
+
+  /* Simple dot bullet, cherry red (Arnav 2026-08-28: replaces the ↳ arrow
+     glyph — "the arrows are weird"). Nudged down to sit on the text's
+     baseline rather than its own line-box centre, which read high against
+     14.5px/1.65 body copy. */
+  .about-bullet-dot {
+    width: 5px;
+    height: 5px;
+    margin-top: 0.55em;
+    border-radius: 50%;
+    background: var(--accent-red);
   }
 
   /* Left rail: metadata label / value */
@@ -1870,16 +1884,13 @@ body {
   opacity: 1;
 }
 
+/* Colour/hover state now lives entirely in .text-arrow-cta (2026-08-28
+   rebuild) — this class only sets layout so it can sit alongside
+   .text-arrow-cta without fighting its color transitions via cascade order. */
 .work-cta {
   display: flex;
   width: max-content;
   margin-top: 42px;
-  color: var(--muted);
-  transition: color 320ms var(--ease-signature);
-}
-
-.work-cta:hover {
-  color: var(--ink);
 }
 
 /* Text Arrow CTA — reimplemented from Arnav's Framer component (see
@@ -1896,84 +1907,95 @@ body {
    container-relative (`calc(100% - iconWidth)` down to `0`), not a transform
    percentage (which is relative to the icon's own tiny box and previously
    stranded it mid-text instead of reaching the far side). */
+/* Rebuilt 2026-08-28 (Arnav pasted a reference component, "delete the old
+   cta code and replace it with the code down below") — mechanic ported from
+   a styled-components snippet into plain CSS (this stack has no
+   styled-components), colours mapped from the snippet's raw hex onto
+   --ink/--accent-red so dark mode and the eye-toggle still work. See
+   text-arrow-cta.tsx for the full provenance note. */
 .text-arrow-cta {
-  --arrow-slot: calc(var(--arrow-size, 18px) + var(--arrow-gap, 8px));
   position: relative;
-  isolation: isolate;
   display: inline-flex;
   align-items: center;
-  padding-bottom: 2px;
-  padding-left: var(--arrow-slot);
+  gap: 8px;
   font-family: var(--font-mono);
   font-size: 15px;
-  font-weight: 500;
+  /* Regular, not 600 (Arnav 2026-08-28: "too bold"). */
+  font-weight: 400;
   color: var(--ink);
-}
-
-.text-arrow-cta::after {
-  content: "";
-  position: absolute;
-  left: var(--arrow-slot);
-  right: 0;
-  bottom: 0;
-  height: 1.5px;
-  background: var(--arrow-underline-color, currentColor);
 }
 
 .text-arrow-cta-label {
   position: relative;
-  z-index: 1;
 }
 
-/* `right: 0` for the rest-of-label slot instead of `left: calc(100% - …)` —
-   `right` is exact regardless of container width, where the `100%` version
-   is relative to the CONTAINER's box (padding included) and previously
-   landed the icon mid-label instead of flush after it.
-   `--arrow-gap` was declared but never actually applied to a rest position —
-   both variants sat flush against the label (0px gap) despite the var
-   existing (Arnav caught this: selected-work's rest arrow touched the last
-   letter). Now both rest positions are offset by the gap so there's real
-   breathing room, and both hover positions land fully in the opposite slot
-   (flush 0, since the destination slot already reserves gap+size). */
-/* The container's own width is exactly label+padding-left — the icon is
-   absolutely positioned so it contributes nothing to layout, meaning
-   `right: 0` sits at the LABEL's right edge, not past it. Anchoring by
-   `right` alone (even negative) only guarantees where the icon's right edge
-   lands; the icon's own 18px width then extends back LEFT from there, which
-   is what put it back on top of the label (Arnav caught this: rest-state
-   arrow touching the last letter). Clearing the label requires offsetting
-   by gap+size together, not gap alone. */
-.text-arrow-cta-icon {
+/* The hover-colour copy of the label, clipped to 0 width at rest and
+   revealed left-to-right on hover — the reference's `content: "Subscribe"`
+   literal, generalised to `attr(data-text)` so it works for both this
+   component's real copy ("More on how I work " / "Back") without a second
+   hardcoded string to keep in sync. */
+.text-arrow-cta-label::before {
+  content: attr(data-text);
   position: absolute;
-  top: 50%;
-  right: calc(-1 * (var(--arrow-gap, 8px) + var(--arrow-size, 18px)));
-  z-index: -1;
-  color: var(--arrow-icon-color, currentColor);
-  transform: translateY(-50%);
-  transition: right var(--arrow-duration, 320ms) var(--ease-signature),
-    left var(--arrow-duration, 320ms) var(--ease-signature);
+  inset: 0;
+  width: 0%;
+  overflow: hidden;
+  color: var(--accent-red);
+  white-space: nowrap;
+  transition: width 0.3s ease-out;
+}
+
+.text-arrow-cta:hover .text-arrow-cta-label::before,
+.text-arrow-cta:focus-visible .text-arrow-cta-label::before {
+  width: 100%;
+}
+
+/* Sliding underline — grows from the left on hover, same colour/timing as
+   the label reveal. */
+.text-arrow-cta::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 0;
+  height: 2px;
+  background: var(--accent-red);
+  transition: width 0.3s ease-out;
+}
+
+.text-arrow-cta:hover::after,
+.text-arrow-cta:focus-visible::after {
+  width: 100%;
+}
+
+.text-arrow-cta-icon {
+  position: relative;
+  flex-shrink: 0;
+  color: var(--ink);
+  transition: transform 0.2s ease-out 0.15s, color 0.2s ease-out 0.15s;
 }
 
 .text-arrow-cta:hover .text-arrow-cta-icon,
 .text-arrow-cta:focus-visible .text-arrow-cta-icon {
-  right: calc(100% - var(--arrow-size, 18px));
+  color: var(--accent-red);
+  transform: translateX(4px);
 }
 
-/* Back means going backward, so the chevron itself points LEFT (`scaleX(-1)`
-   mirrors the one glyph rather than drawing a second path) — but the
-   POSITION journey is identical to the non-reverse variant: rest = right of
-   the label, hover = fully swaps to the left, same box model, same slot,
-   same duration/speed logic. Arnav: it should read "Back ←" at rest and
-   "← Back" on hover, the arrow always pointing backward while it travels
-   forward-then-back across the label like the other CTA. */
-.text-arrow-cta--reverse .text-arrow-cta-icon {
-  transform: translateY(-50%) scaleX(-1);
+/* Back means going backward — the reverse variant's arrow sits before the
+   label (already mirrored via scaleX(-1) inline, text-arrow-cta.tsx) and
+   travels the opposite direction on hover. */
+.text-arrow-cta--reverse .text-arrow-cta-icon:hover,
+.text-arrow-cta--reverse:hover .text-arrow-cta-icon,
+.text-arrow-cta--reverse:focus-visible .text-arrow-cta-icon {
+  transform: translateX(-4px) scaleX(-1);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .work-card,
   .work-nda-tip,
   .work-cta,
+  .text-arrow-cta-label::before,
+  .text-arrow-cta::after,
   .text-arrow-cta-icon {
     transition: none;
   }
@@ -2354,15 +2376,34 @@ body {
   }
   .nav-shell {
     padding-inline: 16px;
+    gap: 20px;
   }
   /* TimeWidget now only lives in .nav-plain-bar (/how-i-work) — the home
      pill (.nav-shell) dropped it entirely 2026-08-27. */
   .nav-plain-bar .type-time {
     display: none;
   }
+  .nav-shell nav {
+    gap: 14px;
+  }
   .nav-link {
     font-size: 12px;
     letter-spacing: 0.02em;
+  }
+  /* Icon-only below this width — 4 full labels plus the avatar/toggle never
+     fit a 402px phone (measured overflow past "Contact"). Text stays in the
+     DOM for the link's accessible name, just visually hidden, so nothing is
+     lost for screen readers. */
+  .nav-link-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   /* Stack 2×max-content overflows ~700–860; collapse earlier. */
@@ -2419,6 +2460,18 @@ body {
     font-size: clamp(15px, 3.8vw, 21.25px) !important;
     max-width: min(540px, 100%);
     margin-top: 1.25rem !important;
+  }
+
+  /* Crab moves out of the sentence on mobile (Arnav 2026-08-29): the
+     statement wraps here, so the desktop mid-sentence crab lands wherever
+     that wrap happens to break — reads as floating over random text. Swap to
+     a centred block above the statement instead. */
+  .opening-hero-crab-inline {
+    display: none;
+  }
+  .pixel-crab-hover--mobile {
+    display: flex;
+    justify-content: center;
   }
 
   .typewriter-line {

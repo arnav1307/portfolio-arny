@@ -54,7 +54,7 @@ const STAGE = {
       ease: "spring" as const,
     },
   },
-  status: { x: 105, y: 30 },
+  status: { x: 95, y: 15 },
 } as const;
 
 type ObjectId = keyof typeof STAGE.objects;

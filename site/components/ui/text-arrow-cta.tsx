@@ -1,27 +1,27 @@
 import Link from "next/link";
-import { useLayoutEffect, useRef, type CSSProperties } from "react";
 
 /**
- * Text Arrow CTA — locked 2026-08-27 (Arnav, with a screenshot): rest =
- * "More on how I work →", hover = "→ More on how I work". The arrow FULLY
- * SWAPS from the right side of the label to the left side, sliding the whole
- * label width and passing behind the text glyphs mid-transit (z-index under
- * the label). It does not just nudge a few px — it ends up on the opposite
- * side. The label itself never moves; only the arrow's position animates,
- * between a right slot and a left slot that flank a fixed-width track so the
- * underline (spanning the whole track) never resizes.
+ * Text Arrow CTA — rebuilt 2026-08-28 (Arnav, pasted a reference component
+ * and said "delete the old cta code and replace it with the code down
+ * below"). The reference used `styled-components`, which isn't in this
+ * stack (Tailwind 4 CSS-first + GSAP is the whole story per CLAUDE.md) —
+ * ported the same mechanic into a plain CSS block in globals.css instead of
+ * adding a new styling library for one component. Reference also hardcoded
+ * `--primary-color: #111` / `--hovered-color: #c84747` as raw hex; mapped to
+ * this site's own tokens (`--ink`, `--accent-red`) so dark mode and the
+ * eye-toggle keep working — hardcoded hex here breaks that flip, a repeat
+ * bug class this codebase has hit before.
  *
- * The arrow's travel distance is the label's width (it slides all the way
- * across). A FIXED transition-duration therefore makes short labels ("Back")
- * animate much faster-feeling than long ones ("More on how I work") even
- * though both use the same 320ms — Arnav caught this side-by-side. Duration
- * is instead derived from the measured label width at a constant speed
- * (px/ms), so every instance of this component moves at the same visual
- * speed regardless of copy length.
+ * Mechanic (from the reference, kept): label text is duplicated into a
+ * `::before` overlay in the hover colour, clipped to 0% width at rest;
+ * hover animates that clip to 100%, so the label appears to recolour
+ * left-to-right rather than snapping. A thin underline grows the same way.
+ * The arrow translates on hover and swaps to the hover colour.
+ *
+ * `reverse` (about page's "Back" link) mirrors the arrow horizontally and
+ * flips which side of the label it sits on — same two call sites as before
+ * (selected-work.tsx's "More on how I work", about-hero.tsx's "Back").
  */
-const ARROW_SPEED_PX_PER_MS = 0.55;
-const MIN_DURATION_MS = 120;
-const MAX_DURATION_MS = 480;
 
 type TextArrowCtaProps = {
   /** Internal or external URL. If omitted, renders as a non-navigating span with the same visuals. */
@@ -31,19 +31,8 @@ type TextArrowCtaProps = {
   onMouseEnter?: () => void;
   onFocus?: () => void;
   className?: string;
-  /** Rest state has the arrow on the left instead of the right, hover slides it further left — used for the about page's back link. */
+  /** Arrow sits before the label and mirrors horizontally — used for the about page's back link. */
   reverse?: boolean;
-  fontFamily?: string;
-  fontSize?: number | string;
-  fontWeight?: number | string;
-  fontColor?: string;
-  underlineColor?: string;
-  arrowColor?: string;
-  /** Arrow width/height in px. */
-  arrowSize?: number;
-  arrowStroke?: number;
-  /** Gap between label and arrow at rest, in px. */
-  arrowGap?: number;
 };
 
 export function TextArrowCta({
@@ -54,76 +43,29 @@ export function TextArrowCta({
   onFocus,
   className,
   reverse = false,
-  fontFamily,
-  fontSize,
-  fontWeight,
-  fontColor,
-  underlineColor,
-  arrowColor,
-  arrowSize = 18,
-  arrowStroke = 1.5,
-  arrowGap = 8,
 }: TextArrowCtaProps) {
-  const labelRef = useRef<HTMLSpanElement>(null);
-  const rootRef = useRef<HTMLAnchorElement & HTMLSpanElement>(null);
-
-  useLayoutEffect(() => {
-    const label = labelRef.current;
-    const root = rootRef.current;
-    if (!label || !root) return;
-    // Travel distance = label width (the arrow slides across the whole
-    // label). Duration is that distance at a constant px/ms speed, clamped
-    // so a one-word label still animates and a very long one doesn't crawl.
-    const distance = label.getBoundingClientRect().width;
-    const duration = Math.min(
-      MAX_DURATION_MS,
-      Math.max(MIN_DURATION_MS, distance / ARROW_SPEED_PX_PER_MS),
-    );
-    root.style.setProperty("--arrow-duration", `${duration}ms`);
-  }, [children]);
-
-  const style = {
-    "--arrow-gap": `${arrowGap}px`,
-    "--arrow-size": `${arrowSize}px`,
-    ...(fontFamily && { fontFamily }),
-    ...(fontSize !== undefined && { fontSize }),
-    ...(fontWeight !== undefined && { fontWeight }),
-    ...(fontColor && { color: fontColor }),
-    ...(underlineColor && { "--arrow-underline-color": underlineColor }),
-  } as CSSProperties;
+  const label = typeof children === "string" ? children : undefined;
 
   const content = (
     <>
-      <span ref={labelRef} className="text-arrow-cta-label">{children}</span>
-      <svg
-        className="text-arrow-cta-icon"
-        viewBox="0 0 24 24"
-        width={arrowSize}
-        height={arrowSize}
-        aria-hidden="true"
-        style={arrowColor ? { color: arrowColor } : undefined}
+      {reverse && <ArrowIcon reverse />}
+      <span
+        className="text-arrow-cta-label"
+        data-text={label}
       >
-        <path
-          d="M5 12h14M13 6l6 6-6 6"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={arrowStroke}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+        {children}
+      </span>
+      {!reverse && <ArrowIcon />}
     </>
   );
 
   const classes = `text-arrow-cta ${reverse ? "text-arrow-cta--reverse" : ""} ${className ?? ""}`.trim();
-  const ariaLabel = typeof children === "string" ? children : undefined;
+  const ariaLabel = label;
 
   if (!href) {
     return (
       <span
-        ref={rootRef}
         className={classes}
-        style={style}
         role="link"
         aria-disabled="true"
         aria-label={ariaLabel}
@@ -136,7 +78,6 @@ export function TextArrowCta({
 
   return (
     <Link
-      ref={rootRef}
       href={href}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
@@ -144,9 +85,30 @@ export function TextArrowCta({
       data-cursor="pointer"
       aria-label={ariaLabel}
       className={classes}
-      style={style}
     >
       {content}
     </Link>
+  );
+}
+
+function ArrowIcon({ reverse = false }: { reverse?: boolean }) {
+  return (
+    <svg
+      className="text-arrow-cta-icon"
+      viewBox="0 0 24 24"
+      width={15}
+      height={15}
+      aria-hidden="true"
+      style={reverse ? { transform: "scaleX(-1)" } : undefined}
+    >
+      <path
+        d="M5 12h14M13 6l6 6-6 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

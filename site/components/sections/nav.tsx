@@ -199,7 +199,7 @@ export function Nav() {
             className="nav-link text-ink transition-opacity hover:opacity-60"
           >
             <WorkIcon />
-            Work
+            <span className="nav-link-text">Work</span>
           </Link>
           <Link
             href="/#stack"
@@ -208,7 +208,7 @@ export function Nav() {
             className="nav-link text-ink transition-opacity hover:opacity-60"
           >
             <StackIcon />
-            Stack
+            <span className="nav-link-text">Stack</span>
           </Link>
           <Link
             href="/#desk"
@@ -217,7 +217,7 @@ export function Nav() {
             className="nav-link text-ink transition-opacity hover:opacity-60"
           >
             <ContactIcon />
-            Contact
+            <span className="nav-link-text">Contact</span>
           </Link>
           <Link
             href="/how-i-work"
@@ -228,7 +228,7 @@ export function Nav() {
             className="nav-link text-ink transition-opacity hover:opacity-60"
           >
             <ApproachIcon />
-            Approach
+            <span className="nav-link-text">Approach</span>
           </Link>
         </nav>
       </header>

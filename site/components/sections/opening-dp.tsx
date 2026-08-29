@@ -195,10 +195,36 @@ const EDGE_VISIBLE_FRACTION = 0.85;
  * the board is a clamped `min()` box, so its on-screen size is not knowable
  * from BOX_W/BOX_H alone.
  */
-function cleanTarget(el: HTMLElement, item: GridItem, stage: DOMRect) {
+function cleanTarget(
+  el: HTMLElement,
+  item: GridItem,
+  stage: DOMRect,
+  isMobile: boolean,
+) {
   const r = el.getBoundingClientRect();
   const restCentreX = r.left + r.width / 2 - stage.left;
   const restCentreY = r.top + r.height / 2 - stage.top;
+
+  // Mobile (Arnav 2026-08-29): a narrow board has no meaningful left/right
+  // edge to hug — the left-vs-right split just crowds both sides of the same
+  // cramped column the hero text also needs. Push top-half-slot items to the
+  // TOP edge and bottom-half-slot items to the BOTTOM edge instead, clearing
+  // a horizontal band for the crab/statement in the middle. Horizontal
+  // position keeps each item's own resting X (chaos layout), just inset from
+  // the stage edges so nothing clips off-board.
+  if (isMobile) {
+    const insetY = r.height * EDGE_VISIBLE_FRACTION;
+    const edgeY = item.slot < 0.5 ? insetY : stage.height - insetY;
+    const minX = r.width / 2;
+    const maxX = stage.width - r.width / 2;
+    const targetX = Math.min(Math.max(restCentreX, minX), maxX);
+    return {
+      x: targetX - restCentreX,
+      y: edgeY - restCentreY,
+      rotation: item.tilt,
+    };
+  }
+
   const inset = r.width * EDGE_VISIBLE_FRACTION;
   const edgeX = item.side === "left" ? inset : stage.width - inset;
   // Keep the object fully on-stage vertically even at the extreme slots.
@@ -304,11 +330,17 @@ export function OpeningDP() {
     const refresh = requestAnimationFrame(() => {
       const stageRect = stage.getBoundingClientRect();
       const tl = timelineRef.current;
+      // Same 900px cutoff as the rest of the site's mobile layer (globals.css).
+      // Read once here (not gsap.matchMedia) because this only decides the
+      // clean-mode drift AXIS at scrub build time — a mid-session breakpoint
+      // cross (rotating the phone) re-running the whole scrub isn't worth the
+      // added complexity for how rarely that happens.
+      const isMobile = window.innerWidth <= 900;
       if (tl) {
         objects.forEach((el, i) => {
           const item = GRID_ITEMS[i];
           if (!item) return;
-          const target = cleanTarget(el, item, stageRect);
+          const target = cleanTarget(el, item, stageRect, isMobile);
           tl.to(
             el,
             {
@@ -435,7 +467,7 @@ export function OpeningDP() {
                      DIRECTLY on the grid. The layer is pointer-events-none so
                      it never eats button clicks; each object opts back in so it
                      can drive the dither on hover. */
-                  className="pointer-events-auto absolute"
+                  className="dp-item pointer-events-auto absolute"
                   style={{
                     left:
                       item.left !== undefined ? pct(item.left, BOX_W) : undefined,
@@ -444,7 +476,11 @@ export function OpeningDP() {
                       item.bottom !== undefined
                         ? pct(item.bottom, BOX_H)
                         : undefined,
-                    width: pct(item.w * SIZE_SCALE, BOX_W),
+                    // Base width times a CSS-controlled multiplier (--dp-item-scale,
+                    // default 1) — mobile bumps this since the board itself shrinks
+                    // a lot more than these items should (Arnav 2026-08-29: SVGs
+                    // read too small on phone vs. web).
+                    width: `calc(${pct(item.w * SIZE_SCALE, BOX_W)} * var(--dp-item-scale, 1))`,
                     aspectRatio: `${item.w} / ${item.h}`,
                   }}
                 >
