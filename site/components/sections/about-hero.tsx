@@ -394,6 +394,12 @@ export function AboutHero() {
                                           ? "var(--chip-terracotta)"
                                           : "var(--chip-blue)"
                                         : "var(--paper-raised)",
+                                  // The two tinted NOW segments carry a light
+                                  // fill in dark mode as well, so their label
+                                  // needs the fixed dark ink rather than --ink.
+                                  ...(i === 1 && j !== 1
+                                    ? { "--seg-ink": "var(--chip-ink)" }
+                                    : {}),
                                 } as React.CSSProperties
                               }
                             >
