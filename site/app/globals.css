@@ -2754,6 +2754,14 @@ body {
   #desk {
     padding-inline: 16px;
   }
+
+  /* Selected Work blurb is `white-space: nowrap` at desktop width on purpose
+     (fits one line at 1140px) — on a 375px phone that just runs the sentence
+     off-screen instead of wrapping (Arnav 2026-08-29: "not displaying the
+     whole thing"). Allow wrap here; desktop's nowrap is untouched. */
+  .work-blurb {
+    white-space: normal;
+  }
 }
 
 @media (max-width: 480px) {
