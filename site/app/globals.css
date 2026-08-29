@@ -2643,6 +2643,11 @@ body {
   }
   .about-rail {
     position: static;
+    /* Pushed after the case-study column (Arnav 2026-08-29: "I want the side
+       bar column to be shown at the end") — grid item order, no markup
+       change. The rail's own internal layout (chips/facts card/socials
+       stacked) is untouched, only its position in the page moved. */
+    order: 2;
   }
 
   /* --nav-h is a static 64px constant (globals.css :root), but .nav-plain-bar
@@ -3796,6 +3801,26 @@ body {
   letter-spacing: 0.04em;
   color: var(--accent);
   transition: opacity var(--dur-micro) var(--ease-signature);
+}
+
+/* Direct cal.com link under the CTA button. Quieter than the button — it is the
+   fallback path, not the primary one (Arnav 2026-08-29). */
+.agent-cap a.agent-cap-link {
+  /* Own line under the button. .agent-cap is display:block, so an inline link
+     after an inline-flex button sat on the same baseline and collided with it. */
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--dur-micro) var(--ease-signature);
+}
+
+.agent-cap a.agent-cap-link:hover {
+  color: var(--ink-soft);
 }
 
 .agent-cap-arrow {

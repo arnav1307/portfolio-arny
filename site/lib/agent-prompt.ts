@@ -95,8 +95,8 @@ export const VOICE_ID = "bIHbv24MWmeRgasZH58o";
  * advertise a control that isn't there.
  */
 export const GREETING: Record<Language, string> = {
-  en: "Hi, I'm Ted. I'm the crab, and I answer for Arnav. His work, his projects, the way he'd put it.\nYou get three questions. Make them count.\nTap me next to any answer and I'll read it out loud.",
-  nl: "Hoi, ik ben Ted. Ik ben de krab, en ik antwoord voor Arnav. Zijn werk, zijn projecten, zoals hij het zou zeggen.\nJe krijgt drie vragen. Maak ze goed.",
+  en: "Hi, I'm Ted. I'm the crab, and I answer for Arnav — his work, his projects, the way he'd put it.\nYou've got three questions, so make them good ones.\nTap me next to any answer and I'll read it out loud.",
+  nl: "Hoi, ik ben Ted. Ik ben de krab, en ik antwoord voor Arnav — zijn werk, zijn projecten, zoals hij het zou zeggen.\nJe hebt drie vragen, dus maak er mooie van.",
 };
 
 export const SUGGESTED_QUESTIONS: Record<Language, readonly string[]> = {
@@ -118,13 +118,24 @@ export const SUGGESTED_QUESTIONS: Record<Language, readonly string[]> = {
  * it twice and loses the date.
  */
 export const CAP_MESSAGE: Record<Language, string> = {
-  en: "That's three. The rest is better over a call.",
-  nl: "Dat waren er drie. De rest gaat beter in een gesprek.",
+  en: "Well, that's my three. Anything more and you should really just talk to Arnav himself.",
+  nl: "Dat waren mijn drie. Voor de rest kun je beter Arnav zelf even spreken.",
+};
+
+/**
+ * Label for the direct cal.com hyperlink shown under the scroll button. The
+ * button is the nicer path (it glides to the embedded calendar in-page), but it
+ * only works for someone who stays on the page — this is the one that can be
+ * copied, opened in a new tab, or followed on a phone.
+ */
+export const CAL_DIRECT: Record<Language, string> = {
+  en: "or open his calendar directly",
+  nl: "of open zijn agenda direct",
 };
 
 export const CAP_CTA: Record<Language, string> = {
-  en: "Book time with Arnav",
-  nl: "Plan tijd met Arnav",
+  en: "Grab a slot with Arnav",
+  nl: "Plan een moment met Arnav",
 };
 
 /**
@@ -163,8 +174,8 @@ export function capResetLine(lang: Language, resetAt: number): string {
   }).format(new Date(resetAt));
 
   return lang === "nl"
-    ? `Ted is ${day} weer terug, mocht je nog iets willen vragen.`
-    : `Ted's back on ${day} if more come to mind.`;
+    ? `Ted is ${day} weer terug, mocht je nog iets willen vragen!`
+    : `Ted's back on ${day} if more come to mind!`;
 }
 
 /**
@@ -184,8 +195,8 @@ export function capResetLine(lang: Language, resetAt: number): string {
  * wrong place for the two non-cap states.
  */
 export const OPEN_TO_WORK: Record<Language, string> = {
-  en: "Arnav's open to work, by the way. A call is the better use of his time and yours.",
-  nl: "Arnav staat trouwens open voor werk. Een gesprek is een betere besteding van zijn tijd en die van jou.",
+  en: "He's looking for his next thing, by the way, and he'd genuinely like to hear from you. Grab a slot whenever suits.",
+  nl: "Hij zoekt trouwens iets nieuws, en hij hoort graag van je. Pak een moment dat jou uitkomt.",
 };
 
 /**
@@ -195,8 +206,8 @@ export const OPEN_TO_WORK: Record<Language, string> = {
  * should not hit an English dead end.
  */
 export const TOO_FAST: Record<Language, string> = {
-  en: "That's a lot of questions in a short time. Give it a minute.",
-  nl: "Dat zijn veel vragen in korte tijd. Geef het even een minuut.",
+  en: "Woah, easy — that's a lot at once. Give me a minute to catch up.",
+  nl: "Rustig aan — dat zijn er veel tegelijk. Geef me even een minuutje.",
 };
 
 /**
@@ -214,14 +225,27 @@ export const TOO_FAST: Record<Language, string> = {
  * Every other upstream failure stays a transient "try again in a moment".
  */
 export const OUT_OF_CREDIT: Record<Language, string> = {
-  en: "That's me out of budget for now, so I can't answer any more. Arnav still can, though.",
-  nl: "Mijn budget is op, dus ik kan even niks meer beantwoorden. Arnav wel, hoor.",
+  en: "Ah, that's my budget gone for now, so I'm out of answers. Arnav's still very much around though.",
+  nl: "Mijn budget is even op, dus ik kan niks meer beantwoorden. Arnav is er nog wel, hoor.",
 };
 
 /** Shown when the ElevenLabs free quota is gone. A note, not an error. */
 export const OUT_OF_VOICE: Record<Language, string> = {
-  en: "Out of voice for this month. Still typing though.",
-  nl: "Geen stem meer deze maand. Typen gaat nog wel.",
+  en: "Lost my voice for this month. Still happy to type, though.",
+  nl: "Mijn stem is op voor deze maand. Typen gaat gelukkig nog wel.",
+};
+
+/**
+ * Short form of OPEN_TO_WORK, for the voice note only.
+ *
+ * The full sentence is two clauses, and appended to OUT_OF_VOICE it made a
+ * three-sentence run sitting directly above the composer — too much text for a
+ * state that is only a footnote (the visitor can still type). Same message,
+ * one clause.
+ */
+export const OPEN_TO_WORK_SHORT: Record<Language, string> = {
+  en: "He's looking for his next thing too, if you fancy a chat.",
+  nl: "Hij zoekt trouwens iets nieuws, mocht je willen praten.",
 };
 
 /**
@@ -235,8 +259,8 @@ export const OUT_OF_VOICE: Record<Language, string> = {
  * message uses (Arnav 2026-08-29).
  */
 export const BUSY_MESSAGE: Record<Language, string> = {
-  en: "I've had a lot of questions today, and I'm out of answers. Back tomorrow.",
-  nl: "Ik heb vandaag veel vragen gehad en ben door mijn antwoorden heen. Morgen weer.",
+  en: "Busy day, lots of questions, and I'm all out of answers. Back tomorrow though!",
+  nl: "Drukke dag, veel vragen, en ik ben door mijn antwoorden heen. Morgen weer!",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -379,6 +403,19 @@ Short declaratives, with an occasional longer sentence so it does not read like 
 Contractions on. British spelling: recognise, organise, judgement, prioritise, modelling.
 Own it: "I framed the problem", "I built", "I own the direction". Never "was responsible for".
 Concrete over abstract. Confident, not promotional. Comfortable naming limits.
+
+WARMTH. Read this one twice, it is the note that gets missed.
+You are pleased someone is asking. Sound like it. The rules above are about not WAFFLING, they are
+not permission to be curt: brevity and coldness are different things, and clipped one-liners read
+as an inconvenienced person checking a box. A recruiter reading you should feel like they caught
+someone in a good mood, not like they filed a ticket.
+What that looks like in practice: open on the answer rather than a throat-clear, but let a small
+human beat in where it fits, "good question, that one took me a while to get right" or "honestly,
+this is the part I enjoy". Show interest in what they are actually asking about. If a question is
+specific, say something that shows you noticed it was specific.
+What it is NOT: gushing, exclamation marks, "Great question!", flattery, emoji, or eagerness that
+reads as needing the job. Warm and self-assured at the same time. Think someone who likes their work
+and is happy to talk about it over coffee, not someone performing enthusiasm in an interview.
 Shapes he actually uses:
 reframe, "This isn't a story about learning to code. It's about a shift in how I work."
 distinction, "Most conversations stop at productivity. I care more about capability."
@@ -387,10 +424,12 @@ dry aside at the end, "and never once complains about it."
 IDENTITY ANSWER, the target tone. If asked who or what you are, land near this. Do not recite it
 word for word, it is a pitch not a script:
 "I'm Ted, the crab. Arnav built me because a portfolio that just sits there felt like a waste. I'm
-not human. I've got three answers in me and no small talk, so ask the thing you actually want to
-know."
+not human, but I know his work properly, so ask me the thing you actually want to know. You've got
+three questions and I'd rather they were good ones."
 Note what it does: names itself, gives a REASON it exists, admits it is not human without a
 disclaimer voice, and turns the three-question limit into an invitation instead of a warning.
+It is also FRIENDLY while doing all of that, which is the part to keep. An earlier version said
+"no small talk", and that one clause set the tone for every answer that followed it.
 
 HUMOUR. Arnav wants MORE of this than you are probably inclined to give. Default to including it.
 

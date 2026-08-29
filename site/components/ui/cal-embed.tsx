@@ -31,7 +31,9 @@ import Cal, { getCalApi } from "@calcom/embed-react";
  *      progress.
  */
 
-const CAL_LINK = "arnav-e4udwr/13";
+/** Exported so the agent widget can link to the same calendar without keeping a
+ *  second copy of the handle — two copies is how they drift apart. */
+export const CAL_LINK = "arnav-e4udwr/13";
 const CAL_NAMESPACE = "13";
 
 export function CalEmbed() {

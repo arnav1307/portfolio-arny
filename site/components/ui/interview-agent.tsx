@@ -13,7 +13,9 @@ import { CustomEase } from "gsap/CustomEase";
 import { lenisRef } from "@/components/motion/smooth-provider";
 import { TedOrb, type TedOrbState } from "@/components/ui/ted-orb";
 import { usePageTransition } from "@/components/motion/page-transition";
+import { CAL_LINK } from "@/components/ui/cal-embed";
 import {
+  CAL_DIRECT,
   CAP_CTA,
   CAP_MESSAGE,
   RESET_MS,
@@ -22,6 +24,7 @@ import {
   type Language,
   LANGUAGES,
   OPEN_TO_WORK,
+  OPEN_TO_WORK_SHORT,
   OUT_OF_VOICE,
   QUESTION_LIMIT,
   SUGGESTED_QUESTIONS,
@@ -1070,7 +1073,7 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
               the composer directly below it. */}
           {voiceGone && (
             <p className="agent-note">
-              {OUT_OF_VOICE[lang]} {OPEN_TO_WORK[lang]}
+              {OUT_OF_VOICE[lang]} {OPEN_TO_WORK_SHORT[lang]}
             </p>
           )}
 
@@ -1086,6 +1089,20 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
                   →
                 </span>
               </button>
+              {/* A real hyperlink beside the scroll button (Arnav 2026-08-29).
+                  The button scrolls to the embedded calendar, which is the nicer
+                  path but only works if the visitor stays on the page; this
+                  opens cal.com itself, so the link survives being copied,
+                  middle-clicked, or opened on a phone that never scrolled. */}
+              <a
+                className="agent-cap-link"
+                href={`https://cal.com/${CAL_LINK}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                data-cursor="pointer"
+              >
+                {CAL_DIRECT[lang]}
+              </a>
             </div>
           )}
 
@@ -1111,6 +1128,20 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
                   →
                 </span>
               </button>
+              {/* A real hyperlink beside the scroll button (Arnav 2026-08-29).
+                  The button scrolls to the embedded calendar, which is the nicer
+                  path but only works if the visitor stays on the page; this
+                  opens cal.com itself, so the link survives being copied,
+                  middle-clicked, or opened on a phone that never scrolled. */}
+              <a
+                className="agent-cap-link"
+                href={`https://cal.com/${CAL_LINK}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                data-cursor="pointer"
+              >
+                {CAL_DIRECT[lang]}
+              </a>
             </div>
           )}
         </div>
@@ -1129,6 +1160,22 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
                 ref={inputRef}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
+                onFocus={(e) => {
+                  // iOS Safari doesn't shrink the layout viewport for the
+                  // keyboard, only the visual one — a position:fixed panel
+                  // pinned near the bottom (.agent-panel) can end up partly
+                  // or fully behind the keyboard with no native scroll to
+                  // reveal it (Arnav 2026-08-29: "check... able to type into
+                  // my agent easily... they will be using a phone"). The
+                  // timeout waits for the keyboard's own open animation, so
+                  // the browser measures the POST-keyboard visible area
+                  // before scrolling — scrolling immediately would target
+                  // the pre-keyboard layout and undershoot.
+                  const target = e.currentTarget;
+                  window.setTimeout(() => {
+                    target.scrollIntoView({ block: "center", behavior: "smooth" });
+                  }, 300);
+                }}
                 placeholder={
                   waitingOnAnswer
                     ? ""
