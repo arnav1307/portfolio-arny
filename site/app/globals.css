@@ -3390,12 +3390,18 @@ body {
      question-related UI). */
   font-weight: 400;
   line-height: 1.55;
-  letter-spacing: -0.01em;
+  /* No tracking. .about-body on /how-i-work runs at normal letter-spacing, and
+     -0.01em inherited down to every answer, making the same 14.5px/400 read
+     denser than the page beside it (Arnav 2026-08-29: "why do these two look
+     different"). Tight tracking belongs on headings here, not body copy. */
+  letter-spacing: normal;
 }
 
 .agent-greeting {
   white-space: pre-line;
-  color: var(--ink);
+  /* --ink-soft, matching .about-body. --ink is near-black and made the panel
+     read heavier than the page even at identical size and weight. */
+  color: var(--ink-soft);
   /* Reduced from 600, same pass as .agent-scroll above. */
   font-weight: var(--agent-weight);
   line-height: var(--agent-line);
@@ -3496,7 +3502,8 @@ body {
   border: 1px solid var(--line);
   border-radius: 14px 14px 14px 2px;
   background: var(--paper);
-  color: var(--ink);
+  /* --ink-soft like .about-body; see .agent-greeting for why. */
+  color: var(--ink-soft);
   font-size: var(--agent-size);
   /* Reduced from 500, same pass as .agent-scroll — Ted's actual answers are
      body copy, not the bold-worthy UI (language/questions). */
