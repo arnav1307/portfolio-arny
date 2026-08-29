@@ -7,6 +7,7 @@ import {
   MAX_INPUT_CHARS,
   MAX_TOKENS,
   OPEN_TO_WORK,
+  OUT_OF_CREDIT,
   SYSTEM_PROMPT,
   TOO_FAST,
 } from "@/lib/agent-prompt";
@@ -142,10 +143,25 @@ export async function POST(req: Request) {
   });
 
   if (!upstream.ok || !upstream.body) {
-    console.error("anthropic error", upstream.status, await upstream.text().catch(() => ""));
+    const detail = await upstream.text().catch(() => "");
+    console.error("anthropic error", upstream.status, detail);
     // Nothing was delivered, so this shouldn't have cost the visitor a slice
     // of their real quota — see creditBack's own doc for why.
     creditBack(ip);
+
+    // The account is actually out of money, which is NOT the same as a blip.
+    // Anthropic returns 400 invalid_request_error with "credit balance is too
+    // low" in the message. Matching on the phrase rather than the status alone
+    // because a 400 can also mean a malformed request, which is our bug and
+    // should keep reading as a transient failure rather than telling a visitor
+    // the agent is broke. If the wording upstream ever changes, this quietly
+    // degrades to the transient copy rather than misfiring.
+    if (/credit balance is too low/i.test(detail)) {
+      return plain(`${OUT_OF_CREDIT[lang]}\n\n${OPEN_TO_WORK[lang]}`, 402, {
+        "X-Agent-Wall": "credit",
+      });
+    }
+
     return plain("I couldn't get to my own brain just then. Try again in a moment.", 502);
   }
 

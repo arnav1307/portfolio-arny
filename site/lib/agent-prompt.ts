@@ -199,6 +199,25 @@ export const TOO_FAST: Record<Language, string> = {
   nl: "Dat zijn veel vragen in korte tijd. Geef het even een minuut.",
 };
 
+/**
+ * The REAL end of the road: Anthropic's credit balance is spent, so there is no
+ * budget left to answer anything (Arnav 2026-08-29).
+ *
+ * ⚠️ Do not confuse this with BUSY_MESSAGE. That one is OUR OWN in-code daily
+ * counter (GLOBAL_PER_DAY in agent-guard.ts), a self-imposed throttle that
+ * resets at midnight and says "back tomorrow" truthfully. THIS one is the
+ * upstream account being out of money: nothing resets it except Arnav topping
+ * the account up, so it must never promise a return time it cannot keep.
+ *
+ * Anthropic signals it as HTTP 400 with an `invalid_request_error` whose message
+ * contains "credit balance is too low" — see the detection in api/ask/route.ts.
+ * Every other upstream failure stays a transient "try again in a moment".
+ */
+export const OUT_OF_CREDIT: Record<Language, string> = {
+  en: "That's me out of budget for now, so I can't answer any more. Arnav still can, though.",
+  nl: "Mijn budget is op, dus ik kan even niks meer beantwoorden. Arnav wel, hoor.",
+};
+
 /** Shown when the ElevenLabs free quota is gone. A note, not an error. */
 export const OUT_OF_VOICE: Record<Language, string> = {
   en: "Out of voice for this month. Still typing though.",

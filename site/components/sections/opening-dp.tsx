@@ -114,6 +114,14 @@ type GridItem = {
    * lazy-loading for the other 15.
    */
   priority?: boolean;
+  /**
+   * Mobile keeps only 8 of the 16 (Arnav 2026-08-29: the full board doesn't
+   * fit a portrait phone — see the up/down drift note above cleanTarget).
+   * Picked for spread across `slot` and a left/right mix, including the one
+   * special-cased folder item. Desktop is unaffected — this only gates a CSS
+   * rule below 900px (data-dp-mobile attribute on the item).
+   */
+  mobile?: boolean;
 };
 
 /**
@@ -131,23 +139,23 @@ const SIZE_SCALE = 0.85;
  * clipped by the edge.
  */
 const GRID_ITEMS: GridItem[] = [
-  { file: "img-15.png", left: 288, top: 114, w: 152, h: 151, side: "left", slot: 0.03, tilt: -8 },
+  { file: "img-15.png", left: 288, top: 114, w: 152, h: 151, side: "left", slot: 0.03, tilt: -8, mobile: true },
   { file: "img-09.png", left: 130, top: 290, w: 144, h: 144, side: "left", slot: 0.22, tilt: 6 },
   { file: "img-03.png", left: 383, top: 285, w: 195, h: 195, side: "left", slot: 0.4, tilt: -5 },
-  { file: "img-11.png", left: 160, bottom: 318, w: 283, h: 283, side: "left", slot: 0.55, tilt: 7, priority: true },
+  { file: "img-11.png", left: 160, bottom: 318, w: 283, h: 283, side: "left", slot: 0.55, tilt: 7, priority: true, mobile: true },
   { file: "img-07.png", left: 310, bottom: 122, w: 171, h: 171, side: "left", slot: 0.71, tilt: -9 },
-  { file: "img-10.png", left: 629, top: 295, w: 210, h: 225, side: "left", slot: 0.86, tilt: 5 },
+  { file: "img-10.png", left: 629, top: 295, w: 210, h: 225, side: "left", slot: 0.86, tilt: 5, mobile: true },
   { file: "img-14.png", left: 505, bottom: 225, w: 100, h: 100, side: "left", slot: 0.8, tilt: -6 },
-  { file: "img-04.png", left: 634, bottom: 20, w: 207, h: 368, side: "left", slot: 0.14, tilt: 9 },
+  { file: "img-04.png", left: 634, bottom: 20, w: 207, h: 368, side: "left", slot: 0.14, tilt: 9, mobile: true },
 
-  { file: "img-16.png", left: 1100, top: 30, w: 143, h: 143, side: "right", slot: 0.08, tilt: 7 },
+  { file: "img-16.png", left: 1100, top: 30, w: 143, h: 143, side: "right", slot: 0.08, tilt: 7, mobile: true },
   { file: "img-13.png", left: 1210, top: 100, w: 196, h: 196, side: "right", slot: 0.14, tilt: -6 },
   { file: "img-08.png", left: 959, top: 177, w: 185, h: 232, side: "right", slot: 0.34, tilt: 8 },
-  { file: "img-06-folder.png", left: 795, top: 124, w: 125, h: 125, side: "right", slot: 0.48, tilt: -7 },
+  { file: "img-06-folder.png", left: 795, top: 124, w: 125, h: 125, side: "right", slot: 0.48, tilt: -7, mobile: true },
   { file: "img-02.png", left: 1289, top: 380, w: 138, h: 316, side: "right", slot: 0.62, tilt: 5 },
-  { file: "img-12.png", left: 1050, bottom: 300, w: 174, h: 172, side: "right", slot: 0.76, tilt: -8 },
+  { file: "img-12.png", left: 1050, bottom: 300, w: 174, h: 172, side: "right", slot: 0.76, tilt: -8, mobile: true },
   { file: "img-05.png", left: 850, bottom: 220, w: 151, h: 151, side: "right", slot: 0.88, tilt: 6 },
-  { file: "img-01.png", left: 1270, bottom: 120, w: 170, h: 170, side: "right", slot: 0.93, tilt: -5 },
+  { file: "img-01.png", left: 1270, bottom: 120, w: 170, h: 170, side: "right", slot: 0.93, tilt: -5, mobile: true },
 ];
 
 /** DP's four text slots, wording VERBATIM (Arnav confirmed 2026-08-02). */
@@ -195,10 +203,34 @@ const EDGE_VISIBLE_FRACTION = 0.85;
  * the board is a clamped `min()` box, so its on-screen size is not knowable
  * from BOX_W/BOX_H alone.
  */
-function cleanTarget(el: HTMLElement, item: GridItem, stage: DOMRect) {
+function cleanTarget(
+  el: HTMLElement,
+  item: GridItem,
+  stage: DOMRect,
+  isMobile: boolean,
+) {
   const r = el.getBoundingClientRect();
   const restCentreX = r.left + r.width / 2 - stage.left;
   const restCentreY = r.top + r.height / 2 - stage.top;
+
+  // Mobile (Arnav 2026-08-29): a narrow board has no meaningful left/right
+  // edge to hug — 8 curated items (4 slot<0.5, 4 slot>=0.5) push to the
+  // TOP/BOTTOM edge instead, clearing a horizontal band for the crab/
+  // statement in the middle. Horizontal position keeps each item's own
+  // resting X, clamped so nothing clips off-board.
+  if (isMobile) {
+    const insetY = r.height * EDGE_VISIBLE_FRACTION;
+    const edgeY = item.slot < 0.5 ? insetY : stage.height - insetY;
+    const minX = r.width / 2;
+    const maxX = stage.width - r.width / 2;
+    const targetX = Math.min(Math.max(restCentreX, minX), maxX);
+    return {
+      x: targetX - restCentreX,
+      y: edgeY - restCentreY,
+      rotation: item.tilt,
+    };
+  }
+
   const inset = r.width * EDGE_VISIBLE_FRACTION;
   const edgeX = item.side === "left" ? inset : stage.width - inset;
   // Keep the object fully on-stage vertically even at the extreme slots.
@@ -245,25 +277,12 @@ export function OpeningDP() {
 
     const mm = gsap.matchMedia(section);
 
-    /* Mobile (Arnav 2026-08-29, screenshot: "so weird the buttons and the way
-       the elements disperse"): the mood board is a 1500×1102 LANDSCAPE canvas
-       of 16 fixed-position images. Shrunk to a ~350px-wide PORTRAIT phone,
-       every image and caption piles into the same cramped column regardless
-       of how small the items render — it's a layout-shape mismatch, not a
-       sizing issue, so no amount of scaling fixes it. Skip the board and the
-       scrub outright below 900px: jump straight to the clean hero, no pin,
-       no chaos state, no mode toggle (nothing to toggle without a board).
-       No ScrollTrigger here means the section doesn't scroll-jack at all on
-       mobile — it just renders like a normal section. */
-    mm.add("(max-width: 900px)", () => {
-      gsap.set(centerLayer, { opacity: 1, y: 0 });
-      if (dither) gsap.set(dither, { opacity: 0 });
-      captions.forEach((el) => gsap.set(el, { opacity: 0 }));
-    });
-
-    mm.add(
-      "(prefers-reduced-motion: no-preference) and (min-width: 900.01px)",
-      () => {
+    /* Mobile (Arnav 2026-08-29) shows only the 8 items flagged `mobile: true`
+       in GRID_ITEMS — see cleanTarget's isMobile branch for the up/down drift
+       that replaces left/right edge-hugging. The other 8 are hidden via CSS
+       ([data-dp-mobile="false"] below 900px in globals.css), so the SAME
+       scrub/pin/toggle mechanism as desktop just has fewer tweens to run. */
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
@@ -307,8 +326,7 @@ export function OpeningDP() {
         { opacity: 1, y: 0, ease: "power1.out", duration: 1.2 },
         0.2,
       );
-      },
-    );
+    });
 
     /* Object x/y targets are measured off `stage.getBoundingClientRect()`,
        but at this synchronous point in useLayoutEffect the pinned stage can
@@ -323,11 +341,18 @@ export function OpeningDP() {
     const refresh = requestAnimationFrame(() => {
       const stageRect = stage.getBoundingClientRect();
       const tl = timelineRef.current;
+      // Same 900px cutoff as the CSS that hides the other 8 items
+      // ([data-dp-mobile="false"], globals.css) — decides the drift AXIS
+      // (up/down vs left/right) and skips building tweens for items that are
+      // display:none here, whose getBoundingClientRect() would be a
+      // degenerate all-zero box.
+      const isMobile = window.innerWidth <= 900;
       if (tl) {
         objects.forEach((el, i) => {
           const item = GRID_ITEMS[i];
           if (!item) return;
-          const target = cleanTarget(el, item, stageRect);
+          if (isMobile && !item.mobile) return;
+          const target = cleanTarget(el, item, stageRect, isMobile);
           tl.to(
             el,
             {
@@ -448,6 +473,7 @@ export function OpeningDP() {
                   key={item.file}
                   data-dp-item
                   data-dp-side={item.side}
+                  data-dp-mobile={item.mobile ? "true" : "false"}
                   onPointerEnter={() => setImageHovered(true)}
                   onPointerLeave={() => setImageHovered(false)}
                   /* No card, no fill, no shadow — ss13 has the objects sitting
@@ -463,7 +489,12 @@ export function OpeningDP() {
                       item.bottom !== undefined
                         ? pct(item.bottom, BOX_H)
                         : undefined,
-                    width: pct(item.w * SIZE_SCALE, BOX_W),
+                    // Base width times a CSS-controlled multiplier
+                    // (--dp-item-scale, default 1) — mobile bumps this since
+                    // the board itself shrinks far more than these items
+                    // should (Arnav 2026-08-29: SVGs read too small on
+                    // phone vs. web).
+                    width: `calc(${pct(item.w * SIZE_SCALE, BOX_W)} * var(--dp-item-scale, 1))`,
                     aspectRatio: `${item.w} / ${item.h}`,
                   }}
                 >

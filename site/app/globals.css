@@ -2742,17 +2742,34 @@ body {
      2026-08-29: "SVG elements are too small... not giving out the same input
      as on web"). Bump the multiplier the item width calc() reads (opening-
      dp.tsx) so images stay legible/tappable at a small board size. */
-  /* Board + mode toggle DROPPED on mobile entirely (Arnav 2026-08-29,
-     screenshot: "so weird the buttons and the way the elements disperse") —
-     see the matching gsap.matchMedia("(max-width: 900px)") branch in
-     opening-dp.tsx. The 16-image board is a landscape 1500×1102 canvas; on a
-     narrow portrait phone every image piles into the same column regardless
-     of scale, and the toggle has nothing to toggle without a board. Mobile
-     jumps straight to the clean hero — no board, no scrub, no buttons. */
-  #opening-dp [data-dp-item],
-  #opening-dp [data-dp-caption],
-  #opening-dp .opening-dp-modes {
+  /* Mobile shows only the 8 items flagged mobile:true in GRID_ITEMS
+     (opening-dp.tsx) — Arnav 2026-08-29: "even if less items can be shown, i
+     want to see those... chaos and clean mode reinstate them". The other 8
+     stay in the DOM (cleanTarget's isMobile branch skips building tweens for
+     them) but never render here. */
+  #opening-dp [data-dp-item][data-dp-mobile="false"] {
     display: none !important;
+  }
+  /* Items are sized as a % of the 1500×1102 artboard, same fraction at every
+     viewport — but the board itself shrinks far more on phone than that
+     fraction accounts for (Arnav 2026-08-29: "SVG elements are too
+     small... not giving out the same input as on web"). The item's own width
+     calc() (opening-dp.tsx) multiplies by this variable, default 1. */
+  #opening-dp {
+    --dp-item-scale: 1.35;
+  }
+  /* Captions stay visible (hiding them read as broken, not intentional) —
+     shrunk to fit the narrower gaps between only 8 spread-out images. */
+  #opening-dp [data-dp-caption] {
+    font-size: 13px !important;
+    max-width: 40vw;
+  }
+  /* Both mode-toggle tooltips were forced on together via the (hover: none)
+     rule further down and collided above the two adjacent buttons — only
+     show the INACTIVE one (tap-target hint), same fix pattern as
+     .work-nda-tip above. */
+  #opening-dp .opening-dp-mode-btn[aria-pressed="false"] .opening-dp-mode-tip {
+    opacity: 1;
   }
 
   .opening-hero-greet {

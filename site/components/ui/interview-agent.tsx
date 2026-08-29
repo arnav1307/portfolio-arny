@@ -606,10 +606,12 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
           signal: controller.signal,
         });
 
-        // Only the daily-ceiling wall gets the CTA, which the route signals by
-        // header. The per-IP wall also answers 429 but lifts in a minute, so it
-        // is a "wait", not a dead end, and must not pitch a call.
-        if (res.headers.get("X-Agent-Wall") === "global") setOutOfAnswers(true);
+        // Two walls end the conversation and both are flagged by header:
+        // "global" (our own daily counter, resets at midnight) and "credit"
+        // (the Anthropic account is actually out of money). The per-IP wall
+        // also answers 429 but sends NO header, because it lifts in about a
+        // minute — a wait, not a dead end.
+        if (res.headers.get("X-Agent-Wall")) setOutOfAnswers(true);
 
         if (!res.body) throw new Error("no body");
 
@@ -1060,11 +1062,17 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
             </div>
           ))}
 
-          {/* Running out of VOICE is not running out of Ted — the visitor can
-              still type, so this stays a quiet note and does not carry the
-              open-to-work pitch. Only the states that actually end the
-              conversation do (Arnav 2026-08-29). */}
-          {voiceGone && <p className="agent-note">{OUT_OF_VOICE[lang]}</p>}
+          {/* Voice quota gone. The visitor can still TYPE, so this stays a note
+              rather than a dead end — but it does carry the open-to-work line,
+              because running out of a paid resource is exactly the moment to
+              mention a call is available (Arnav 2026-08-29). No CTA button: the
+              conversation is still live, and a button here would compete with
+              the composer directly below it. */}
+          {voiceGone && (
+            <p className="agent-note">
+              {OUT_OF_VOICE[lang]} {OPEN_TO_WORK[lang]}
+            </p>
+          )}
 
           {/* Ran out of API budget rather than questions. The wall copy and the
               open-to-work line already streamed in as the assistant turn above
