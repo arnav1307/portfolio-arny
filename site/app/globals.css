@@ -3353,6 +3353,28 @@ body {
   border-color: var(--line);
 }
 
+/* ┌─ AGENT TYPE — TUNE HERE ────────────────────────────────────────────────┐
+   Every size and weight inside the panel resolves from these four tokens, so
+   the whole widget can be retuned from one place instead of hunting rules
+   (Arnav 2026-08-29: "preview the file where I can change the bold").
+
+   Matched to .about-body on /how-i-work, which is the reference for reading
+   copy on this site: 14.5px / 400 / 1.65. Ted's answers are body text and
+   should read exactly like the case study does.
+
+   --agent-weight        answers, greeting, cap copy      400 normal
+   --agent-weight-ui     chips, buttons, labels           500 medium
+   Try 300 for lighter, 500 for a touch more presence. Anything at or above 600
+   is what made the panel read as shouty.
+   └─────────────────────────────────────────────────────────────────────────┘ */
+:root {
+  --agent-size: 14.5px;
+  --agent-size-ui: 13px;
+  --agent-line: 1.65;
+  --agent-weight: 400;
+  --agent-weight-ui: 500;
+}
+
 .agent-scroll {
   flex: 1;
   min-height: 0;
@@ -3362,7 +3384,7 @@ body {
   flex-direction: column;
   gap: 14px;
   font-family: var(--font-display);
-  font-size: 14.5px;
+  font-size: var(--agent-size);
   /* Reduced from 500 (Arnav 2026-08-26: widget copy read "too bold" — bold
      stays only where it's doing real work, the language switcher and
      question-related UI). */
@@ -3375,8 +3397,8 @@ body {
   white-space: pre-line;
   color: var(--ink);
   /* Reduced from 600, same pass as .agent-scroll above. */
-  font-weight: 400;
-  line-height: 1.5;
+  font-weight: var(--agent-weight);
+  line-height: var(--agent-line);
   /* First thing every visitor sees — keep it tight over the suggestions. */
   margin: 0;
 }
@@ -3397,8 +3419,8 @@ body {
   border-radius: 12px;
   background: var(--paper);
   font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--agent-size-ui);
+  font-weight: var(--agent-weight-ui);
   letter-spacing: -0.01em;
   color: var(--ink);
   text-align: left;
@@ -3462,8 +3484,8 @@ body {
   border-radius: 14px 14px 2px 14px;
   background: var(--ink);
   color: var(--paper);
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--agent-size-ui);
+  font-weight: var(--agent-weight-ui);
   letter-spacing: -0.01em;
 }
 
@@ -3475,10 +3497,11 @@ body {
   border-radius: 14px 14px 14px 2px;
   background: var(--paper);
   color: var(--ink);
-  font-size: 14px;
+  font-size: var(--agent-size);
   /* Reduced from 500, same pass as .agent-scroll — Ted's actual answers are
      body copy, not the bold-worthy UI (language/questions). */
-  font-weight: 400;
+  font-weight: var(--agent-weight);
+  line-height: var(--agent-line);
 }
 
 /* `.agent-caret` + `agent-blink` were DELETED 2026-08-15. The blinking block
@@ -3681,7 +3704,9 @@ body {
 .agent-cap p {
   color: var(--ink);
   margin-bottom: 10px;
-  font-weight: 600;
+  font-size: var(--agent-size);
+  font-weight: var(--agent-weight);
+  line-height: var(--agent-line);
 }
 
 /* Launcher is hidden over the hero (data-revealed="false") and fades up once the
@@ -3771,7 +3796,7 @@ body {
    the CTA is the primary action, this is the consolation prize. */
 .agent-cap p.agent-cap-reset {
   color: var(--ink-soft);
-  font-weight: 400;
+  font-weight: var(--agent-weight);
   margin-top: -4px;
 }
 
@@ -3780,7 +3805,7 @@ body {
    should not look like a footnote (Arnav 2026-08-29). */
 .agent-cap p.agent-cap-open {
   color: var(--ink);
-  font-weight: 400;
+  font-weight: var(--agent-weight);
   margin-top: 2px;
 }
 
@@ -3791,7 +3816,8 @@ body {
   padding-top: 0;
 }
 
-.agent-cap button {
+.agent-cap button,
+.agent-cap > a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -3803,33 +3829,15 @@ body {
   transition: opacity var(--dur-micro) var(--ease-signature);
 }
 
-/* Direct cal.com link under the CTA button. Quieter than the button — it is the
-   fallback path, not the primary one (Arnav 2026-08-29). */
-.agent-cap a.agent-cap-link {
-  /* Own line under the button. .agent-cap is display:block, so an inline link
-     after an inline-flex button sat on the same baseline and collided with it. */
-  display: block;
-  margin-top: 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.03em;
-  color: var(--muted);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  transition: color var(--dur-micro) var(--ease-signature);
-}
-
-.agent-cap a.agent-cap-link:hover {
-  color: var(--ink-soft);
-}
-
 .agent-cap-arrow {
   display: inline-block;
   transition: transform 220ms var(--ease-signature);
 }
 
-.agent-cap button:hover { opacity: 0.75; }
-.agent-cap button:hover .agent-cap-arrow {
+.agent-cap button:hover,
+.agent-cap > a:hover { opacity: 0.75; }
+.agent-cap button:hover .agent-cap-arrow,
+.agent-cap > a:hover .agent-cap-arrow {
   transform: translateX(3px);
 }
 
@@ -3980,5 +3988,14 @@ body {
 
   .agent-panel {
     bottom: calc(var(--agent-bottom) + 52px + var(--agent-lift));
+  }
+
+  /* iOS Safari auto-zooms the whole page on focus for any input under 16px
+     (Arnav 2026-08-29: checking the agent is easy to type into on phone) —
+     14px was fine for desktop's deliberate sizing but triggers that zoom on
+     tap here, which is jarring and fights the visitor's own pinch-zoom
+     state. 16px is the documented threshold that suppresses it. */
+  .agent-compose input {
+    font-size: 16px;
   }
 }

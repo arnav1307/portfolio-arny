@@ -7,15 +7,14 @@ import {
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { gsap } from "gsap";
 import { CustomEase } from "gsap/CustomEase";
 import { lenisRef } from "@/components/motion/smooth-provider";
 import { TedOrb, type TedOrbState } from "@/components/ui/ted-orb";
 import { usePageTransition } from "@/components/motion/page-transition";
-import { CAL_LINK } from "@/components/ui/cal-embed";
 import {
-  CAL_DIRECT,
   CAP_CTA,
   CAP_MESSAGE,
   RESET_MS,
@@ -1083,26 +1082,24 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
               only when the cap box is not already showing one. */}
           {outOfAnswers && !capped && (
             <div className="agent-cap agent-cap--quota">
-              <button type="button" data-cursor="pointer" onClick={goToContact}>
+              {/* A real <a href="/#contact">, not a button (Arnav 2026-08-29).
+                  It still scrolls to the embedded calendar — preventDefault +
+                  goToContact — but being an anchor means it can be copied,
+                  middle-clicked or opened in a tab, and it lands on the Cal
+                  embed rather than an external page. No separate link line. */}
+              <Link
+                href="/#contact"
+                data-cursor="pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  goToContact();
+                }}
+              >
                 <span>{CAP_CTA[lang]}</span>
                 <span className="agent-cap-arrow" aria-hidden>
                   →
                 </span>
-              </button>
-              {/* A real hyperlink beside the scroll button (Arnav 2026-08-29).
-                  The button scrolls to the embedded calendar, which is the nicer
-                  path but only works if the visitor stays on the page; this
-                  opens cal.com itself, so the link survives being copied,
-                  middle-clicked, or opened on a phone that never scrolled. */}
-              <a
-                className="agent-cap-link"
-                href={`https://cal.com/${CAL_LINK}`}
-                target="_blank"
-                rel="noreferrer noopener"
-                data-cursor="pointer"
-              >
-                {CAL_DIRECT[lang]}
-              </a>
+              </Link>
             </div>
           )}
 
@@ -1122,26 +1119,24 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
               {/* Third line, its own owner — see OPEN_TO_WORK's doc. Sits above
                   the CTA so the button is the answer to the sentence. */}
               <p className="agent-cap-open">{OPEN_TO_WORK[lang]}</p>
-              <button type="button" data-cursor="pointer" onClick={goToContact}>
+              {/* A real <a href="/#contact">, not a button (Arnav 2026-08-29).
+                  It still scrolls to the embedded calendar — preventDefault +
+                  goToContact — but being an anchor means it can be copied,
+                  middle-clicked or opened in a tab, and it lands on the Cal
+                  embed rather than an external page. No separate link line. */}
+              <Link
+                href="/#contact"
+                data-cursor="pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  goToContact();
+                }}
+              >
                 <span>{CAP_CTA[lang]}</span>
                 <span className="agent-cap-arrow" aria-hidden>
                   →
                 </span>
-              </button>
-              {/* A real hyperlink beside the scroll button (Arnav 2026-08-29).
-                  The button scrolls to the embedded calendar, which is the nicer
-                  path but only works if the visitor stays on the page; this
-                  opens cal.com itself, so the link survives being copied,
-                  middle-clicked, or opened on a phone that never scrolled. */}
-              <a
-                className="agent-cap-link"
-                href={`https://cal.com/${CAL_LINK}`}
-                target="_blank"
-                rel="noreferrer noopener"
-                data-cursor="pointer"
-              >
-                {CAL_DIRECT[lang]}
-              </a>
+              </Link>
             </div>
           )}
         </div>
