@@ -2730,51 +2730,41 @@ body {
     text-align: left;
   }
 
-  /* OpeningDP: keep aspect-fluid board, just tighter inset on phone. */
+  /* OpeningDP mobile — static populated collage (Arnav 2026-08-29, second
+     pass same day: "rewind to opening dp on how it was... make it static and
+     remove the buttons... disperse the images... populate it well"). All 16
+     images render at once in their normal chaos layout, permanently — see
+     the matching gsap.matchMedia("(max-width: 900px)") branch in
+     opening-dp.tsx that skips the pin/scrub/toggle entirely below this width
+     and reveals the hero immediately instead of on scroll progress. */
   #opening-dp .opening-dp-board {
     width: min(94vw, calc(72svh * 1500 / 1102)) !important;
   }
   #opening-dp .opening-dp-center {
     padding-inline: 20px;
   }
+  /* Nothing to toggle without a scrub — buttons removed outright rather than
+     disabled/hidden-but-present, since there's no chaos/clean state left to
+     switch between. */
   #opening-dp .opening-dp-modes {
-    bottom: 1.25rem;
-    gap: 0.75rem;
+    display: none !important;
   }
   /* Items are sized as a % of the 1500×1102 artboard, same fraction at every
      viewport — but the board itself shrinks far more on phone than that
      fraction accounts for, so images rendered near-invisible (Arnav
      2026-08-29: "SVG elements are too small... not giving out the same input
-     as on web"). Bump the multiplier the item width calc() reads (opening-
-     dp.tsx) so images stay legible/tappable at a small board size. */
-  /* Mobile shows only the 8 items flagged mobile:true in GRID_ITEMS
-     (opening-dp.tsx) — Arnav 2026-08-29: "even if less items can be shown, i
-     want to see those... chaos and clean mode reinstate them". The other 8
-     stay in the DOM (cleanTarget's isMobile branch skips building tweens for
-     them) but never render here. */
-  #opening-dp [data-dp-item][data-dp-mobile="false"] {
-    display: none !important;
-  }
-  /* Items are sized as a % of the 1500×1102 artboard, same fraction at every
-     viewport — but the board itself shrinks far more on phone than that
-     fraction accounts for (Arnav 2026-08-29: "SVG elements are too
-     small... not giving out the same input as on web"). The item's own width
-     calc() (opening-dp.tsx) multiplies by this variable, default 1. */
+     as on web"). The item's own width calc() (opening-dp.tsx) multiplies by
+     this variable, default 1. */
   #opening-dp {
     --dp-item-scale: 1.35;
   }
-  /* Captions stay visible (hiding them read as broken, not intentional) —
-     shrunk to fit the narrower gaps between only 8 spread-out images. */
+  /* Captions belong to the scroll-driven reveal story (they fade in as the
+     board scrubs toward clean) — with no scrub left to drive that, they'd
+     just sit permanently on top of a permanently-populated board, competing
+     with 16 images for the same space. Hidden here; the hero text carries
+     the copy instead. */
   #opening-dp [data-dp-caption] {
-    font-size: 13px !important;
-    max-width: 40vw;
-  }
-  /* Both mode-toggle tooltips were forced on together via the (hover: none)
-     rule further down and collided above the two adjacent buttons — only
-     show the INACTIVE one (tap-target hint), same fix pattern as
-     .work-nda-tip above. */
-  #opening-dp .opening-dp-mode-btn[aria-pressed="false"] .opening-dp-mode-tip {
-    opacity: 1;
+    display: none !important;
   }
 
   .opening-hero-greet {
@@ -3358,9 +3348,10 @@ body {
    the whole widget can be retuned from one place instead of hunting rules
    (Arnav 2026-08-29: "preview the file where I can change the bold").
 
-   Matched to .about-body on /how-i-work, which is the reference for reading
-   copy on this site: 14.5px / 400 / 1.65. Ted's answers are body text and
-   should read exactly like the case study does.
+   Sized DOWN from .about-body's 14.5px (Arnav 2026-08-29): the panel is a
+   ~360px column floating over the page, not a 68ch measure, so the same size
+   that reads calm at full width reads oversized in here. 12.5px keeps the
+   same shape and weight as the case study, at panel scale.
 
    --agent-weight        answers, greeting, cap copy      400 normal
    --agent-weight-ui     chips, buttons, labels           500 medium
@@ -3368,9 +3359,9 @@ body {
    is what made the panel read as shouty.
    └─────────────────────────────────────────────────────────────────────────┘ */
 :root {
-  --agent-size: 14.5px;
-  --agent-size-ui: 13px;
-  --agent-line: 1.65;
+  --agent-size: 12.5px;
+  --agent-size-ui: 12px;
+  --agent-line: 1.62;
   --agent-weight: 400;
   --agent-weight-ui: 500;
 }
@@ -3684,8 +3675,10 @@ body {
 
 .agent-note {
   font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
+  /* One step under the UI size so the note stays subordinate to the answers
+     it sits beneath, but still follows the panel's scale. */
+  font-size: calc(var(--agent-size-ui) - 1px);
+  font-weight: var(--agent-weight-ui);
   color: var(--muted);
 }
 
@@ -3829,8 +3822,8 @@ body {
   align-items: center;
   gap: 6px;
   font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--agent-size-ui);
+  font-weight: var(--agent-weight-ui);
   letter-spacing: 0.04em;
   color: var(--accent);
   transition: opacity var(--dur-micro) var(--ease-signature);
@@ -3852,26 +3845,42 @@ body {
    Star is an SVG (Baking reference), not the muddy ✨ emoji. */
 .agent-thinking {
   display: inline-flex;
-  align-items: center;
-  gap: 7px;
+  align-items: baseline;
+  gap: 6px;
   color: var(--accent);
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  /* MONO, not display (Arnav 2026-08-29, referencing Claude Code's own spinner
+     line). The whole point of this state is that it reads as a machine working,
+     which is what the terminal-style face says and a soft UI sticker does not. */
+  font-family: var(--font-mono);
+  /* Follows the panel scale like everything else, and no longer 14px/600 —
+     it was the largest, heaviest thing in the transcript while claiming to be
+     a quiet status line. */
+  font-size: var(--agent-size-ui);
+  font-weight: var(--agent-weight-ui);
+  letter-spacing: 0;
   line-height: 1.3;
-  filter: drop-shadow(0 1px 1.5px color-mix(in srgb, var(--ink) 12%, transparent));
+  /* No drop-shadow. It read as a raised sticker popping over the transcript;
+     a status line should sit flat in it. */
 }
 
+/* The asterisk. A real glyph in the mono face rather than an SVG star, so it
+   shares the baseline and metrics of the word beside it — the SVG was a 13px
+   box being optically centred against text, which is what made it read big. */
 .agent-thinking-star {
   flex-shrink: 0;
-  width: 13px;
-  height: 13px;
   color: var(--accent);
-  filter: drop-shadow(0 0 0.7px var(--paper))
-    drop-shadow(0 0 0.7px var(--paper))
-    drop-shadow(0 1px 1px color-mix(in srgb, var(--ink) 10%, transparent));
-  animation: agent-star-spin 8s linear infinite;
+  /* Slow, so it reads as "working" rather than "loading". The terminal
+     reference turns; it does not throb. */
+  animation: agent-star-spin 3.2s linear infinite;
+  display: inline-block;
+  /* Rotation needs a box; inline glyphs do not transform reliably. */
+  transform-origin: 50% 55%;
+}
+
+/* Elapsed seconds, quieter than the phrase — it is evidence, not the message. */
+.agent-thinking-meta {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 @keyframes agent-star-spin {
@@ -3940,11 +3949,17 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 500;
+  /* Follows the panel scale. ⚠️ The mobile breakpoint below deliberately
+     overrides this to 16px — anything smaller makes iOS zoom the page on tap.
+     Do not tokenise that one away. */
+  font-size: var(--agent-size);
+  font-weight: var(--agent-weight-ui);
 }
 
-.agent-compose input::placeholder { color: var(--muted); font-weight: 500; }
+.agent-compose input::placeholder {
+  color: var(--muted);
+  font-weight: var(--agent-weight-ui);
+}
 .agent-compose input:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--ink) 35%, var(--line));

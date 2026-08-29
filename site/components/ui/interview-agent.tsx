@@ -150,24 +150,49 @@ function shuffleThinking(): string[] {
   return next;
 }
 
-/** Four-point sticker star — Baking reference silhouette, not ✨. */
+/**
+ * The spinning asterisk, a real `*` in the mono face rather than an SVG.
+ *
+ * Modelled on Claude Code's own spinner line (Arnav supplied screenshots,
+ * 2026-08-29). The earlier version was a 13px four-point SVG star, which had to
+ * be optically centred against the text and read as a sticker sitting on top of
+ * the transcript. A glyph shares the baseline and metrics of the word beside it,
+ * so the whole status line behaves like one piece of text.
+ *
+ * aria-hidden because the accessible status is on the wrapper's aria-label.
+ */
 function ThinkingStar() {
   return (
-    <svg
-      className="agent-thinking-star"
-      width="13"
-      height="13"
-      viewBox="0 0 16 16"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path d="M8 0 L9.35 6.65 L16 8 L9.35 9.35 L8 16 L6.65 9.35 L0 8 L6.65 6.65 Z" />
-    </svg>
+    <span className="agent-thinking-star" aria-hidden>
+      *
+    </span>
   );
 }
 
-/** Only ever rendered beside Ted, never in the composer. */
+/**
+ * Only ever rendered beside Ted, never in the composer.
+ *
+ * Shape follows Claude Code's own spinner line (Arnav 2026-08-29): the turning
+ * asterisk, the gerund, then the elapsed seconds in parentheses. The counter is
+ * the part that makes it read as a real process rather than a decorative
+ * "loading" badge — something is measurably happening, and the number moving is
+ * the proof.
+ *
+ * Deliberately NOT showing a token count like the terminal does: we do not know
+ * it client-side until the stream ends, and inventing one would be a fake number
+ * on a page whose whole argument is that the numbers are real.
+ */
 function ThinkingStatus({ phrase }: { phrase: string }) {
+  const [secs, setSecs] = useState(0);
+
+  useEffect(() => {
+    const started = Date.now();
+    const id = window.setInterval(() => {
+      setSecs(Math.floor((Date.now() - started) / 1000));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <span
       className="agent-thinking"
@@ -178,6 +203,7 @@ function ThinkingStatus({ phrase }: { phrase: string }) {
       <span key={phrase} className="agent-thinking-phrase">
         {phrase}
       </span>
+      <span className="agent-thinking-meta">({secs}s)</span>
     </span>
   );
 }
