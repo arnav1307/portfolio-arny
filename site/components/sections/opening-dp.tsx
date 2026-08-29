@@ -195,36 +195,10 @@ const EDGE_VISIBLE_FRACTION = 0.85;
  * the board is a clamped `min()` box, so its on-screen size is not knowable
  * from BOX_W/BOX_H alone.
  */
-function cleanTarget(
-  el: HTMLElement,
-  item: GridItem,
-  stage: DOMRect,
-  isMobile: boolean,
-) {
+function cleanTarget(el: HTMLElement, item: GridItem, stage: DOMRect) {
   const r = el.getBoundingClientRect();
   const restCentreX = r.left + r.width / 2 - stage.left;
   const restCentreY = r.top + r.height / 2 - stage.top;
-
-  // Mobile (Arnav 2026-08-29): a narrow board has no meaningful left/right
-  // edge to hug — the left-vs-right split just crowds both sides of the same
-  // cramped column the hero text also needs. Push top-half-slot items to the
-  // TOP edge and bottom-half-slot items to the BOTTOM edge instead, clearing
-  // a horizontal band for the crab/statement in the middle. Horizontal
-  // position keeps each item's own resting X (chaos layout), just inset from
-  // the stage edges so nothing clips off-board.
-  if (isMobile) {
-    const insetY = r.height * EDGE_VISIBLE_FRACTION;
-    const edgeY = item.slot < 0.5 ? insetY : stage.height - insetY;
-    const minX = r.width / 2;
-    const maxX = stage.width - r.width / 2;
-    const targetX = Math.min(Math.max(restCentreX, minX), maxX);
-    return {
-      x: targetX - restCentreX,
-      y: edgeY - restCentreY,
-      rotation: item.tilt,
-    };
-  }
-
   const inset = r.width * EDGE_VISIBLE_FRACTION;
   const edgeX = item.side === "left" ? inset : stage.width - inset;
   // Keep the object fully on-stage vertically even at the extreme slots.
@@ -271,7 +245,25 @@ export function OpeningDP() {
 
     const mm = gsap.matchMedia(section);
 
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
+    /* Mobile (Arnav 2026-08-29, screenshot: "so weird the buttons and the way
+       the elements disperse"): the mood board is a 1500×1102 LANDSCAPE canvas
+       of 16 fixed-position images. Shrunk to a ~350px-wide PORTRAIT phone,
+       every image and caption piles into the same cramped column regardless
+       of how small the items render — it's a layout-shape mismatch, not a
+       sizing issue, so no amount of scaling fixes it. Skip the board and the
+       scrub outright below 900px: jump straight to the clean hero, no pin,
+       no chaos state, no mode toggle (nothing to toggle without a board).
+       No ScrollTrigger here means the section doesn't scroll-jack at all on
+       mobile — it just renders like a normal section. */
+    mm.add("(max-width: 900px)", () => {
+      gsap.set(centerLayer, { opacity: 1, y: 0 });
+      if (dither) gsap.set(dither, { opacity: 0 });
+      captions.forEach((el) => gsap.set(el, { opacity: 0 }));
+    });
+
+    mm.add(
+      "(prefers-reduced-motion: no-preference) and (min-width: 900.01px)",
+      () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
@@ -315,7 +307,8 @@ export function OpeningDP() {
         { opacity: 1, y: 0, ease: "power1.out", duration: 1.2 },
         0.2,
       );
-    });
+      },
+    );
 
     /* Object x/y targets are measured off `stage.getBoundingClientRect()`,
        but at this synchronous point in useLayoutEffect the pinned stage can
@@ -330,17 +323,11 @@ export function OpeningDP() {
     const refresh = requestAnimationFrame(() => {
       const stageRect = stage.getBoundingClientRect();
       const tl = timelineRef.current;
-      // Same 900px cutoff as the rest of the site's mobile layer (globals.css).
-      // Read once here (not gsap.matchMedia) because this only decides the
-      // clean-mode drift AXIS at scrub build time — a mid-session breakpoint
-      // cross (rotating the phone) re-running the whole scrub isn't worth the
-      // added complexity for how rarely that happens.
-      const isMobile = window.innerWidth <= 900;
       if (tl) {
         objects.forEach((el, i) => {
           const item = GRID_ITEMS[i];
           if (!item) return;
-          const target = cleanTarget(el, item, stageRect, isMobile);
+          const target = cleanTarget(el, item, stageRect);
           tl.to(
             el,
             {
@@ -476,11 +463,7 @@ export function OpeningDP() {
                       item.bottom !== undefined
                         ? pct(item.bottom, BOX_H)
                         : undefined,
-                    // Base width times a CSS-controlled multiplier (--dp-item-scale,
-                    // default 1) — mobile bumps this since the board itself shrinks
-                    // a lot more than these items should (Arnav 2026-08-29: SVGs
-                    // read too small on phone vs. web).
-                    width: `calc(${pct(item.w * SIZE_SCALE, BOX_W)} * var(--dp-item-scale, 1))`,
+                    width: pct(item.w * SIZE_SCALE, BOX_W),
                     aspectRatio: `${item.w} / ${item.h}`,
                   }}
                 >
@@ -573,7 +556,7 @@ export function OpeningDP() {
             as the NDA tooltip. Click behaviour (goToMode) is unchanged.
             Outside the centre layer so the scrub's opacity tween never hides
             them. ── */}
-        <div className="absolute inset-x-0 bottom-8 z-20 flex items-center justify-center gap-3">
+        <div className="opening-dp-modes absolute inset-x-0 bottom-8 z-20 flex items-center justify-center gap-3">
           {(
             [
               { id: "chaos" as const, label: "Chaos Mode on", icon: "puzzle.svg", scale: 1 },
