@@ -89,7 +89,17 @@ export const ABOUT_SECTIONS = [
     body: [
       "Most conversations about AI stop at productivity, at doing the same work a little faster. I care about the other thing: what one person can own that used to need three roles and two handoffs.",
       "In my current work that meant a procurement process scattered across two enterprise systems and five thousand engineered parts. I ran the discovery, modelled the data, built the control tower leadership actually opens, and prototyped an agent that reads supplier email and checks readiness before a person sees it. Then I stood in front of the directors who had to approve it.",
-      "The first thing the dashboard proved was that only 38% of quotes were closing inside the agreed window. Nobody had been able to see that before.",
+    ],
+    // The 38% finding pulled out of the paragraph run 2026-08-29. It is the only
+    // real number on the page and it was buried mid-block; the "In other words:"
+    // lead-in plus a ruled quote is the treatment Arnav picked from a reference.
+    // Prose RESUMES underneath via `afterQuote` — the quote is a beat in the
+    // block, not its ending.
+    quote: {
+      lead: "In other words:",
+      text: "Only 38% of quotes were closing inside the agreed window. Nobody had been able to see that before.",
+    },
+    afterQuote: [
       "One person across all of it, because AI covered the parts that used to need more. Not a faster developer, a shorter distance between the problem and the thing that fixes it.",
     ],
   },
@@ -114,18 +124,47 @@ export const ABOUT_SECTIONS = [
     // reads in half the time. Also kills the duplicate "scaffolding" line.
     small: "How it works",
     big: "Where my time goes now",
-    body: ["The division of labour is simple. I decide, it drafts, I check."],
-    bullets: [
-      "I break a large problem into parts small enough to specify; AI builds each part",
-      "I decide how something should behave before it exists; AI turns that into a working first version fast",
-      "I write the constraints down once, so the agent stops rediscovering them",
-      "I read the output for whether it holds up, not just whether it runs",
-      "I test three approaches in the time one used to take, then throw two away",
-      "I stop and change the plan when it is the plan that is wrong, not the code",
+    // Bullets became the SHIFT diagram 2026-08-29 (option B of three, picked by
+    // Arnav). The six bullets are all still here, redistributed: the three that
+    // described a handoff became the bar segments, the other three became the
+    // Grew / Shrank / Did not move columns underneath.
+    body: [
+      "The division of labour is simple. I decide, it drafts, I check. What changed is not the hours, it is which hours.",
     ],
-    after: [
-      "The work moved from doing the tasks to directing the agents that do them. It handles the groundwork I used to quietly dread, and never once complains about it.",
-    ],
+    shift: {
+      // ⚠️ SEGMENTS ARE EQUAL WIDTH ON PURPOSE — locked 2026-08-29. An earlier
+      // draft sized them 18/62/20 → 42/16/42 to look like a measured split.
+      // Nothing measures how Arnav's time actually divides, and an unlabelled
+      // proportional bar reads as data. Equal thirds make it a diagram of which
+      // part of the work changed hands, which is the honest claim. Do not
+      // "improve" this by restoring weights unless a real number turns up.
+      before: {
+        label: "Before",
+        lead: "Most of a build was execution. The thinking was real, but it sat at the edges of the day, bracketed by hours of typing out something I had already worked out in my head.",
+        segments: ["Deciding", "Doing the tasks, by hand", "Checking"],
+      },
+      now: {
+        label: "Now",
+        lead: "The middle stopped being mine. What sits on either side of it is where the work is now: deciding how something should behave before it exists, then reading what came back for whether it actually holds up.",
+        segments: ["Framing and specifying", "Drafting, delegated", "Reviewing and re-specifying"],
+      },
+      close:
+        "The work moved from doing the tasks to directing the agents that do them. It handles the groundwork I used to quietly dread, and never once complains about it.",
+      columns: [
+        {
+          label: "Grew",
+          body: "Breaking problems into parts small enough to specify, and writing the constraints down once so the agent stops rediscovering them.",
+        },
+        {
+          label: "Shrank",
+          body: "The groundwork I used to quietly dread. I now test three approaches in the time one used to take, then throw two away.",
+        },
+        {
+          label: "Did not move",
+          body: "Knowing when to stop and change the plan, because it is the plan that is wrong and not the code.",
+        },
+      ],
+    },
   },
   {
     // Regrounded 2026-08-14. Every bullet here used to be true of anyone. They are
@@ -133,18 +172,25 @@ export const ABOUT_SECTIONS = [
     // production line, the closed network, the compliance framing for directors.
     // Specific enough to be real, generic enough to stay NDA-safe.
     small: "Decision-making",
-    big: "My judgement is still the part that matters!",
-    body: ["The highest-value calls never moved. AI could not tell me:"],
-    bullets: [
-      "Which problem was worth solving, when the one people complained about was not the one costing them time",
-      "That the honest answer was a prototype and an adoption plan, not a production system nobody had approved yet",
-      "Which approach survived a real constraint: an audit trail, a closed network, a habit someone had held for years",
-      "When to abandon something I had already built rather than patch it",
-      "How to present it to a director so the risk was the story and the technology was the footnote",
+    big: "My judgement is still the part that matters",
+    // Bullets became PROSE + a highlight card 2026-08-29. The five calls read
+    // better as two paragraphs than as a list — they are sentences, not items —
+    // and the `after` line was promoted into the card's heading, which is the
+    // treatment Arnav asked for from a reference screenshot.
+    // ⚠️ The exclamation mark came off `big` deliberately: the card now carries
+    // the emphasis, and a shouting heading above a shouting card is one too many.
+    body: [
+      "The highest-value calls never moved. Which problem was worth solving, when the one people complained about was not the one costing them time. That the honest answer was a prototype and an adoption plan, not a production system nobody had approved yet.",
+      "Which approach survived a real constraint: an audit trail, a closed network, a habit someone had held for years. When to abandon something I had already built rather than patch it. How to present it to a director so the risk was the story and the technology was the footnote.",
     ],
-    after: [
-      "Those came down to judgement, and knowing what the work was actually for.",
-    ],
+    highlight: {
+      icon: "star",
+      tint: "blue",
+      label: "Judgement",
+      heading:
+        "AI could not tell me any of it. Those came down to knowing what the work was actually for.",
+      body: "Every one of these was a call about people, risk and timing rather than about code. They are the reason the prototype got approved, and the reason it stayed a prototype until it was ready to be more.",
+    },
   },
   {
     // NEW 2026-08-14. Nobody writes this block, which is exactly why it works.
@@ -154,14 +200,43 @@ export const ABOUT_SECTIONS = [
     // interview agent is already tuned for.
     small: "The honest part",
     big: "Where it still breaks",
-    body: ["It is not magic, and I would rather say so."],
-    bullets: [
-      "It is confident when it is wrong, so anything it writes about a system it cannot see gets checked by hand",
-      "It optimises for an answer, not for the right answer, and those are different when compliance is in the room",
-      "It has no stake in the outcome, so it will happily build the thing I asked for instead of the thing I needed",
-      "The more context a problem carries, the more of the work comes back to me",
+    // Bullets became CARDS 2026-08-29. Same four failure modes, same order —
+    // the copy was cut to a heading plus one line each so the grid stays light
+    // (Arnav: the cards must not be heavily populated with content). The prose
+    // below now carries the argument the bullets used to carry.
+    body: [
+      "It is not magic, and I would rather say so. Four ways it fails me, and none of them are edge cases. Which is fine. The parts it cannot do are the parts worth being paid for.",
     ],
-    after: ["Which is fine. The parts it cannot do are the parts worth being paid for."],
+    cards: [
+      {
+        icon: "target",
+        tint: "terracotta",
+        label: "Confidence",
+        heading: "Confident, and wrong",
+        body: "Anything it writes about a system it cannot see gets checked by hand.",
+      },
+      {
+        icon: "trend",
+        tint: "blue",
+        label: "Optimisation",
+        heading: "An answer, not the answer",
+        body: "Different things, once compliance is in the room.",
+      },
+      {
+        icon: "brief",
+        tint: "sand",
+        label: "No stake",
+        heading: "Builds what I asked for",
+        body: "Happily. Even when it is not the thing I needed.",
+      },
+      {
+        icon: "clock",
+        tint: "sage",
+        label: "Context",
+        heading: "Context comes back to me",
+        body: "The more a problem carries, the more of the work comes back to me.",
+      },
+    ],
   },
   {
     small: "Outcome",

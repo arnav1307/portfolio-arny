@@ -58,6 +58,22 @@
      this is that blue pulled toward the site's own --blue so it doesn't shout. */
   --sparkle: #2b8ae8;
 
+  /* /how-i-work insight-card icon chips (2026-08-29). Four tints so the cards
+     read as four different things rather than one repeated block; the glyph
+     inside each stays --ink, per Arnav's reference screenshot.
+     These are desaturated pulls from colours already in this file rather than
+     new hues — terracotta and blue off the accent tokens, sand off --line, sage
+     off --status-green — which is what stops four chips reading as a rainbow.
+     Tokens, not inline hex: hardcoding these would strand four pale squares on
+     the near-black page when the eye-toggle flips. */
+  --chip-terracotta: #f6d9cf;
+  --chip-blue: #cfe0f6;
+  --chip-sand: #e2dcc9;
+  --chip-sage: #d4e3d8;
+  /* Neutral fill for the shift diagram's middle segment — the part of the work
+     that is no longer done by hand. Deliberately duller than the chips. */
+  --shift-neutral: #e8e3d6;
+
   /* Typewriter block caret — resolved 2026-08-27 (Arnav): use --accent-blue,
      same blue as opening-dp.tsx's chaos/clean toggle accents. Was --accent-red
      as a placeholder guess. */
@@ -114,6 +130,15 @@
      and gold both go muddy against it. */
   --sparkle: #5fb0ff;
   --halo: #ffd84d;
+  /* Card chips, dark. The light pastels are near-white and would blow out
+     against --paper #01060d, so these are deep, low-chroma versions of the same
+     four hues instead of tints. The glyph inside still uses --ink, which is
+     near-white here — so the contrast direction inverts and stays legible. */
+  --chip-terracotta: #4a2b1e;
+  --chip-blue: #1e3350;
+  --chip-sand: #3a3527;
+  --chip-sage: #24382b;
+  --shift-neutral: #2a2825;
   /* --gold, --blue, --status-green, --type-caret stay as-is */
 }
 
@@ -890,6 +915,197 @@ body {
     margin-top: 0.55em;
     border-radius: 50%;
     background: var(--accent-red);
+  }
+
+  /* ── /how-i-work artifacts (2026-08-29) ──
+     Three block treatments that replace flat bullet lists: an insight-card
+     grid, a before/now shift diagram, and a highlight card. All three are
+     STATIC — no hover, no motion. Arnav's standing rule for this page is that
+     people are reading, not being shown off to. */
+
+  /* Insight cards — 2-up, 2 above / 2 below. */
+  .about-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* stretch, not start: cards in a row match the taller one's height, so the
+       row's bottom edge stays straight when one body wraps to two lines. */
+    align-items: stretch;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .about-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--paper-raised);
+  }
+  .about-card-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    /* Set per card by an inline custom property, so the tint stays a token. */
+    background: var(--chip, var(--tint-rect));
+    color: var(--ink);
+  }
+  .about-card-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .about-card-heading {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+  }
+  .about-card-body {
+    font-family: var(--font-display);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    /* Pins the body to the card's bottom so bodies align across a row even when
+       one heading wraps and its neighbour doesn't. */
+    margin-top: auto;
+  }
+
+  /* Shift diagram — two equal-width bars, before and now. */
+  .about-shift {
+    display: flex;
+    flex-direction: column;
+    gap: 34px;
+    margin-top: 22px;
+  }
+  .about-shift-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .about-shift-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  /* The "Now" bar's label is the one accent mark in the block. */
+  .about-shift-label--now {
+    color: var(--accent-red);
+  }
+  .about-shift-bar {
+    display: flex;
+    height: 52px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .about-shift-seg {
+    /* ⚠️ EQUAL THIRDS, locked — see the note in about-data.ts. Weighting these
+       would claim a measurement that does not exist. */
+    flex: 1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding-inline: 14px;
+    font-family: var(--font-display);
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.3;
+    background: var(--seg, var(--paper-raised));
+    color: var(--ink);
+  }
+  .about-shift-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-top: 26px;
+    border-top: 1px solid var(--line);
+  }
+  .about-shift-cols {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+  .about-shift-col-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .about-shift-col-body {
+    font-family: var(--font-display);
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+
+  /* Pull-quote — the "In other words:" beat. */
+  .about-quote {
+    margin: 6px 0 0;
+    padding: 2px 0 2px 20px;
+    border-left: 3px solid var(--accent-red);
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    max-width: 60ch;
+  }
+
+  /* Highlight card — one statement, carried as a heading. */
+  .about-highlight {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 18px;
+    padding: 28px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--paper-raised);
+  }
+  .about-highlight-heading {
+    font-family: var(--font-display);
+    font-size: 25px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .about-highlight-body {
+    font-family: var(--font-display);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--ink-soft);
+  }
+
+  /* One column below the /about breakpoint — same 901px the rail uses. */
+  @media (max-width: 900px) {
+    .about-cards,
+    .about-shift-cols {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    /* Stacked segments: a 3-up bar at phone width crushes the labels. */
+    .about-shift-bar {
+      height: auto;
+      flex-direction: column;
+    }
+    .about-shift-seg {
+      padding-block: 12px;
+    }
   }
 
   /* Left rail: metadata label / value */
@@ -2447,9 +2663,21 @@ body {
     bottom: 1.25rem;
     gap: 0.75rem;
   }
-  /* Absolute caption plates collide on a narrow board — drop them; images carry. */
+  /* Items are sized as a % of the 1500×1102 artboard, same fraction at every
+     viewport — but the board itself shrinks far more on phone than that
+     fraction accounts for, so images rendered near-invisible (Arnav
+     2026-08-29: "SVG elements are too small... not giving out the same input
+     as on web"). Bump the multiplier the item width calc() reads (opening-
+     dp.tsx) so images stay legible/tappable at a small board size. */
+  #opening-dp {
+    --dp-item-scale: 1.35;
+  }
+  /* Captions stay visible (Arnav 2026-08-29: hiding them read as broken, not
+     intentional) — shrunk further than the desktop clamp() floor so the two-
+     line plates fit the narrower gaps between images on a small board. */
   #opening-dp [data-dp-caption] {
-    display: none;
+    font-size: 13px !important;
+    max-width: 40vw;
   }
 
   .opening-hero-greet {
@@ -2493,9 +2721,13 @@ body {
   }
 }
 
-/* Touch: mode labels always on — no hover to discover chaos/clean. */
+/* Touch: no hover to discover chaos/clean, so show a label without it — but
+   ONLY on the button that ISN'T the active mode (Arnav 2026-08-29: both
+   tooltips were forced on together and collided above the two adjacent
+   buttons). The inactive one reads as "tap this to switch", which is also
+   more useful than labelling the mode already showing. */
 @media (hover: none) {
-  #opening-dp .opening-dp-mode-tip {
+  #opening-dp .opening-dp-mode-btn[aria-pressed="false"] .opening-dp-mode-tip {
     opacity: 1;
   }
 }

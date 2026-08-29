@@ -30,6 +30,12 @@ import { TedWalk } from "@/components/ui/ted-walk";
 import { OPEN_AGENT_EVENT } from "@/components/ui/interview-agent";
 import { TextArrowCta } from "@/components/ui/text-arrow-cta";
 import { GitHubIcon, LinkedInIcon, XIcon } from "@/components/ui/social-icons";
+import {
+  ABOUT_ICONS,
+  CHIP_TINTS,
+  type AboutIconName,
+  type ChipTint,
+} from "@/components/ui/about-icons";
 import { CONTACT } from "@/lib/data";
 import {
   ABOUT_EYEBROW,
@@ -310,8 +316,144 @@ export function AboutHero() {
                   </ul>
                 )}
 
+                {/* Pull-quote — the "In other words:" beat. Renders BETWEEN the
+                    body and `afterQuote`, so prose resumes underneath it rather
+                    than the quote closing the block. */}
+                {"quote" in section && section.quote && (
+                  <>
+                    <p className="about-body">{section.quote.lead}</p>
+                    <blockquote className="about-quote">
+                      {section.quote.text}
+                    </blockquote>
+                  </>
+                )}
+
+                {/* `afterQuote` exists on exactly one section, so the const
+                    assertion narrows it to {} on every other member of the
+                    union — hence the explicit cast, same shape as the reads
+                    above it. */}
+                {"afterQuote" in section &&
+                  (section.afterQuote as readonly string[]).map((paragraph) => (
+                    <p key={paragraph} className="about-body mt-3.5">
+                      {paragraph}
+                    </p>
+                  ))}
+
+                {/* Insight cards — 2 above, 2 below. */}
+                {"cards" in section && section.cards && (
+                  <div className="about-cards">
+                    {section.cards.map((card) => (
+                      <div key={card.heading} className="about-card">
+                        <span
+                          className="about-card-chip"
+                          style={
+                            {
+                              "--chip": CHIP_TINTS[card.tint as ChipTint],
+                            } as React.CSSProperties
+                          }
+                        >
+                          {ABOUT_ICONS[card.icon as AboutIconName]}
+                        </span>
+                        <span className="flex flex-col gap-2">
+                          <span className="about-card-label">{card.label}</span>
+                          <h3 className="about-card-heading">{card.heading}</h3>
+                        </span>
+                        <p className="about-card-body">{card.body}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Shift diagram — before / now, equal-width segments. */}
+                {"shift" in section && section.shift && (
+                  <div className="about-shift">
+                    {[section.shift.before, section.shift.now].map((bar, i) => (
+                      <div key={bar.label} className="about-shift-group">
+                        <span
+                          className={`about-shift-label${
+                            i === 1 ? " about-shift-label--now" : ""
+                          }`}
+                        >
+                          {bar.label}
+                        </span>
+                        <p className="about-body">{bar.lead}</p>
+                        <div className="about-shift-bar">
+                          {bar.segments.map((seg, j) => (
+                            <span
+                              key={seg}
+                              className="about-shift-seg"
+                              style={
+                                {
+                                  // Middle segment is the neutral fill in both
+                                  // bars — it's the part that changed hands.
+                                  "--seg":
+                                    j === 1
+                                      ? "var(--shift-neutral)"
+                                      : i === 1
+                                        ? j === 0
+                                          ? "var(--chip-terracotta)"
+                                          : "var(--chip-blue)"
+                                        : "var(--paper-raised)",
+                                } as React.CSSProperties
+                              }
+                            >
+                              {seg}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="about-shift-foot">
+                      <p className="about-body">{section.shift.close}</p>
+                      <div className="about-shift-cols">
+                        {section.shift.columns.map((col) => (
+                          <div key={col.label} className="flex flex-col gap-1.5">
+                            <span className="about-shift-col-label">
+                              {col.label}
+                            </span>
+                            <span className="about-shift-col-body">{col.body}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Highlight card — the statement carried as a heading. */}
+                {"highlight" in section && section.highlight && (
+                  <div className="about-highlight">
+                    <span
+                      className="about-card-chip"
+                      style={
+                        {
+                          "--chip":
+                            CHIP_TINTS[section.highlight.tint as ChipTint],
+                        } as React.CSSProperties
+                      }
+                    >
+                      {ABOUT_ICONS[section.highlight.icon as AboutIconName]}
+                    </span>
+                    <span className="flex flex-col gap-3">
+                      <span className="about-card-label">
+                        {section.highlight.label}
+                      </span>
+                      <h3 className="about-highlight-heading">
+                        {section.highlight.heading}
+                      </h3>
+                    </span>
+                    <p className="about-highlight-body">
+                      {section.highlight.body}
+                    </p>
+                  </div>
+                )}
+
+                {/* Only one section still carries `after` now that three blocks
+                    became cards/diagram/highlight, so the const assertion
+                    narrows it to {} elsewhere in the union — same cast as
+                    `afterQuote` above. */}
                 {"after" in section &&
-                  section.after?.map((paragraph) => (
+                  (section.after as readonly string[]).map((paragraph) => (
                     <p key={paragraph} className="about-body">
                       {paragraph}
                     </p>
