@@ -137,6 +137,28 @@ export function checkAndRecord(ip: string): GuardResult {
   return { ok: true };
 }
 
+/**
+ * Undo one checkAndRecord hit for this IP. Call when the upstream call the
+ * guard was gating never actually delivered anything — a failed Anthropic/
+ * ElevenLabs request, or a stream that errored before producing an answer.
+ * Without this, a transient upstream failure permanently burns a slice of
+ * the visitor's real per-IP/global quota for zero answers (Arnav 2026-08-28
+ * code review finding).
+ *
+ * Pops the single most recent stamp from each bucket rather than filtering
+ * by exact value — checkAndRecord just pushed `now` onto the end of each
+ * array with nothing awaited in between, so the last element IS the hit
+ * being undone. Safe to call even if the ip has no bucket (nothing to pop).
+ */
+export function creditBack(ip: string): void {
+  if (globalDay.length > 0) globalDay.pop();
+
+  const bucket = ipBuckets.get(ip);
+  if (!bucket) return;
+  bucket.hour.pop();
+  bucket.day.pop();
+}
+
 // ── Answer tokens ────────────────────────────────────────────────────────────
 // /api/speak takes a signed payload, never free-form text from the browser.
 // The id IS the answer (HMAC-signed + timestamped), so ask and speak can land

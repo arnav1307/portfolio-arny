@@ -11,6 +11,7 @@ import {
 import {
   checkAndRecord,
   clientIp,
+  creditBack,
   registerAnswer,
   verifyToken,
 } from "@/lib/agent-guard";
@@ -86,7 +87,8 @@ export async function POST(req: Request) {
     return plain("Ask me something and I'll answer.", 400);
   }
 
-  const guard = checkAndRecord(clientIp(req));
+  const ip = clientIp(req);
+  const guard = checkAndRecord(ip);
   if (!guard.ok) {
     return plain(
       guard.reason === "global"
@@ -127,6 +129,9 @@ export async function POST(req: Request) {
 
   if (!upstream.ok || !upstream.body) {
     console.error("anthropic error", upstream.status, await upstream.text().catch(() => ""));
+    // Nothing was delivered, so this shouldn't have cost the visitor a slice
+    // of their real quota — see creditBack's own doc for why.
+    creditBack(ip);
     return plain("I couldn't get to my own brain just then. Try again in a moment.", 502);
   }
 
@@ -176,6 +181,11 @@ export async function POST(req: Request) {
         }
       } catch (err) {
         console.error("stream failed", err);
+        // Only credit back if nothing was actually delivered — a stream that
+        // produced partial text before erroring did spend real tokens, so
+        // that one stays charged. An empty answer means zero spend and zero
+        // value to the visitor, exactly the case creditBack exists for.
+        if (!answer.trim()) creditBack(ip);
         controller.enqueue(line({ t: " ...lost my train of thought there. Ask again?" }));
       } finally {
         controller.close();

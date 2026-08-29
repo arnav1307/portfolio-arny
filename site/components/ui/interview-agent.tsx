@@ -238,6 +238,9 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
   /** Cached blobs, so replaying an answer never costs characters again. */
   const clips = useRef<Map<string, string>>(new Map());
   const revealRaf = useRef(0);
+  /** Cancels the in-flight /api/ask fetch + stream reader on unmount (2026-08-28
+      code review finding: neither had any cancellation before this). */
+  const askAbort = useRef<AbortController | null>(null);
 
   const capped = asked >= QUESTION_LIMIT;
   const suggestions = SUGGESTED_QUESTIONS[lang];
@@ -558,6 +561,11 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
       player?.pause();
       cached.forEach((url) => URL.revokeObjectURL(url));
       if (revealRaf.current) cancelAnimationFrame(revealRaf.current);
+      // Stops the in-flight /api/ask fetch + stream reader rather than
+      // leaking them past unmount (2026-08-28 code review finding — this
+      // effect already cancelled everything else, the ask() request was the
+      // one thing it missed).
+      askAbort.current?.abort();
     };
   }, []);
 
@@ -574,6 +582,9 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
       const history = [...turns, { role: "user" as const, content: text }];
       setTurns([...history, { role: "assistant", content: "" }]);
 
+      const controller = new AbortController();
+      askAbort.current = controller;
+
       try {
         const res = await fetch("/api/ask", {
           method: "POST",
@@ -583,6 +594,7 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
             lang,
             messages: history.map(({ role, content }) => ({ role, content })),
           }),
+          signal: controller.signal,
         });
 
         if (!res.body) throw new Error("no body");
@@ -697,6 +709,11 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
           cancelAnimationFrame(revealRaf.current);
           revealRaf.current = 0;
         }
+        // An aborted fetch (component unmounted mid-stream, see the cleanup
+        // effect below) throws the same way a real network error does — but
+        // there's no one left to show an error message to, and painting one
+        // would be a setState-after-unmount warning.
+        if (controller.signal.aborted) return;
         setTurns((prev) => {
           const next = [...prev];
           next[next.length - 1] = {
@@ -706,7 +723,7 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
           return next;
         });
       } finally {
-        setBusy(false);
+        if (!controller.signal.aborted) setBusy(false);
       }
     },
     [asked, askedAt, busy, capped, lang, token, turns],
@@ -721,6 +738,14 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
         setAudio(null);
         return;
       }
+
+      // A click while the SAME answer is already loading must be ignored, not
+      // just one while playing. Without this a second click before the first
+      // /api/speak fetch resolves fires a second fetch, and the second
+      // player.src write while the first play() is still pending throws
+      // AbortError — swallowed below, so the orb silently snaps back to idle
+      // and looks like the first click "didn't work" (Arnav, 2026-08-29).
+      if (audio?.id === answerId && audio.state === "loading") return;
 
       playerRef.current?.pause();
       setAudio({ id: answerId, state: "loading" });
@@ -1009,6 +1034,7 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
                         : "Hear Ted read this answer"
                     }
                     data-state={orbState(turn.answerId)}
+                    disabled={orbState(turn.answerId) === "loading"}
                   >
                     <TedOrb state={orbState(turn.answerId)} />
                   </button>

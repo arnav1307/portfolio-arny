@@ -11,6 +11,7 @@ import {
 import {
   checkAndRecord,
   clientIp,
+  creditBack,
   lookupAnswer,
   verifyToken,
 } from "@/lib/agent-guard";
@@ -107,7 +108,8 @@ export async function POST(req: Request) {
   const answer = lookupAnswer(body.id);
   if (!answer) return err(404, "unknown_answer");
 
-  const guard = checkAndRecord(clientIp(req));
+  const ip = clientIp(req);
+  const guard = checkAndRecord(ip);
   if (!guard.ok) return err(429, "rate_limited");
 
   let text = answer;
@@ -140,6 +142,9 @@ export async function POST(req: Request) {
     // buttons for a quiet note; it is not an error state (spec §6).
     const quotaGone = speech.status === 401 || speech.status === 429;
     console.error("elevenlabs error", speech.status);
+    // No audio was delivered, so this shouldn't cost the visitor a slice of
+    // their real quota (same reasoning as ask/route.ts's creditBack calls).
+    creditBack(ip);
     return err(quotaGone ? 429 : 502, quotaGone ? "quota" : "tts_failed");
   }
 
