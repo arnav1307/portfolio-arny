@@ -954,9 +954,9 @@ body {
     background: var(--chip, var(--tint-rect));
     color: var(--ink);
   }
-  /* 600 on the card labels, 500 on the diagram's (Arnav's mockup weights,
+  /* 600 on the card labels, 400 on the diagram's (Arnav's mockup weights,
      2026-08-29) — the cards carry more of the reading load, so their eyebrow
-     is a touch heavier than the bar/column labels. */
+     is heavier than the bar/column labels, which sit at the plain default. */
   .about-card-label {
     font-family: var(--font-display);
     font-size: 11px;
@@ -1001,7 +1001,7 @@ body {
   .about-shift-label {
     font-family: var(--font-display);
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 400;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
@@ -1047,7 +1047,7 @@ body {
   .about-shift-col-label {
     font-family: var(--font-display);
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 400;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
@@ -1065,8 +1065,11 @@ body {
     padding: 2px 0 2px 20px;
     border-left: 3px solid var(--accent-red);
     font-family: var(--font-display);
-    font-size: 17px;
-    font-weight: 500;
+    /* 14px regular (Arnav 2026-08-29). The quote is not meant to out-size the
+       prose it sits inside — the red rule is what marks it, so it reads at the
+       same scale as the surrounding copy rather than as a second heading. */
+    font-size: 14px;
+    font-weight: 400;
     line-height: 1.5;
     letter-spacing: -0.01em;
     color: var(--ink);
@@ -2679,15 +2682,17 @@ body {
      2026-08-29: "SVG elements are too small... not giving out the same input
      as on web"). Bump the multiplier the item width calc() reads (opening-
      dp.tsx) so images stay legible/tappable at a small board size. */
-  #opening-dp {
-    --dp-item-scale: 1.35;
-  }
-  /* Captions stay visible (Arnav 2026-08-29: hiding them read as broken, not
-     intentional) — shrunk further than the desktop clamp() floor so the two-
-     line plates fit the narrower gaps between images on a small board. */
-  #opening-dp [data-dp-caption] {
-    font-size: 13px !important;
-    max-width: 40vw;
+  /* Board + mode toggle DROPPED on mobile entirely (Arnav 2026-08-29,
+     screenshot: "so weird the buttons and the way the elements disperse") —
+     see the matching gsap.matchMedia("(max-width: 900px)") branch in
+     opening-dp.tsx. The 16-image board is a landscape 1500×1102 canvas; on a
+     narrow portrait phone every image piles into the same column regardless
+     of scale, and the toggle has nothing to toggle without a board. Mobile
+     jumps straight to the clean hero — no board, no scrub, no buttons. */
+  #opening-dp [data-dp-item],
+  #opening-dp [data-dp-caption],
+  #opening-dp .opening-dp-modes {
+    display: none !important;
   }
 
   .opening-hero-greet {
