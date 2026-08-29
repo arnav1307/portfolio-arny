@@ -340,6 +340,11 @@ export function RightNow() {
     canvas.addEventListener("pointerdown", down);
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
+    // A touch that starts a drag but gets pre-empted (an OS gesture, a
+    // browser deciding it's actually a scroll) fires pointercancel instead of
+    // pointerup — without this, `up()` never runs and `interacting` stays
+    // stuck non-null, permanently pausing idle rotation. Same reset as up().
+    window.addEventListener("pointercancel", up);
 
     return () => {
       cancelAnimationFrame(frame);
@@ -348,6 +353,7 @@ export function RightNow() {
       canvas.removeEventListener("pointerdown", down);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
     };
     // regionIndex, visitor, and the theme are DELIBERATELY not deps — all three
     // are read from refs/the DOM inside the render loop, so the globe is

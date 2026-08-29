@@ -21,6 +21,7 @@ import {
   GREETING,
   type Language,
   LANGUAGES,
+  OPEN_TO_WORK,
   OUT_OF_VOICE,
   QUESTION_LIMIT,
   SUGGESTED_QUESTIONS,
@@ -197,6 +198,14 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  /**
+   * Set when /api/ask answers 429 — Claude's daily ceiling or the per-IP wall.
+   * The copy itself streams in as a normal assistant turn (the route sends error
+   * text in the same `{t}` shape), so this flag exists only to render the
+   * booking CTA underneath it. Same button the cap message uses; the whole point
+   * of the change is that every dead end offers the call (Arnav 2026-08-29).
+   */
+  const [outOfAnswers, setOutOfAnswers] = useState(false);
   const [thinkIdx, setThinkIdx] = useState(0);
   const [thinkQueue, setThinkQueue] = useState<string[]>(() => [...THINKING_PHRASES]);
   const [asked, setAsked] = useState(0);
@@ -596,6 +605,11 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
           }),
           signal: controller.signal,
         });
+
+        // Only the daily-ceiling wall gets the CTA, which the route signals by
+        // header. The per-IP wall also answers 429 but lifts in a minute, so it
+        // is a "wait", not a dead end, and must not pitch a call.
+        if (res.headers.get("X-Agent-Wall") === "global") setOutOfAnswers(true);
 
         if (!res.body) throw new Error("no body");
 
@@ -1046,7 +1060,26 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
             </div>
           ))}
 
+          {/* Running out of VOICE is not running out of Ted — the visitor can
+              still type, so this stays a quiet note and does not carry the
+              open-to-work pitch. Only the states that actually end the
+              conversation do (Arnav 2026-08-29). */}
           {voiceGone && <p className="agent-note">{OUT_OF_VOICE[lang]}</p>}
+
+          {/* Ran out of API budget rather than questions. The wall copy and the
+              open-to-work line already streamed in as the assistant turn above
+              (see /api/ask's guard branch), so this only adds the CTA — and
+              only when the cap box is not already showing one. */}
+          {outOfAnswers && !capped && (
+            <div className="agent-cap agent-cap--quota">
+              <button type="button" data-cursor="pointer" onClick={goToContact}>
+                <span>{CAP_CTA[lang]}</span>
+                <span className="agent-cap-arrow" aria-hidden>
+                  →
+                </span>
+              </button>
+            </div>
+          )}
 
           {capped && (
             <div className="agent-cap">
@@ -1061,6 +1094,9 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
                   {capResetLine(lang, askedAt + RESET_MS)}
                 </p>
               )}
+              {/* Third line, its own owner — see OPEN_TO_WORK's doc. Sits above
+                  the CTA so the button is the answer to the sentence. */}
+              <p className="agent-cap-open">{OPEN_TO_WORK[lang]}</p>
               <button type="button" data-cursor="pointer" onClick={goToContact}>
                 <span>{CAP_CTA[lang]}</span>
                 <span className="agent-cap-arrow" aria-hidden>

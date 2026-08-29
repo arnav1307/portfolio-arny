@@ -167,15 +167,58 @@ export function capResetLine(lang: Language, resetAt: number): string {
     : `Ted's back on ${day} if more come to mind.`;
 }
 
+/**
+ * The one line every "Ted has run out of something" state ends on (Arnav
+ * 2026-08-29). Questions used up, Claude's daily ceiling hit, ElevenLabs
+ * characters gone — whichever wall the visitor hits, the last thing they read
+ * is that Arnav is open to work, so the dead end turns into the booking CTA
+ * that already sits under the cap message.
+ *
+ * ⚠️ ONE constant, used by all four paths on purpose. Writing the sentence
+ * inline at each site is how the wording drifts apart, and this is the line
+ * that has to be consistent — it is the actual pitch.
+ *
+ * Deliberately not part of CAP_MESSAGE: that constant is line one of the cap
+ * and capResetLine() is line two, both with their own owners. This is a third
+ * line with a third owner, and folding it into either would render it in the
+ * wrong place for the two non-cap states.
+ */
+export const OPEN_TO_WORK: Record<Language, string> = {
+  en: "Arnav's open to work, by the way. A call is the better use of his time and yours.",
+  nl: "Arnav staat trouwens open voor werk. Een gesprek is een betere besteding van zijn tijd en die van jou.",
+};
+
+/**
+ * The per-IP rate limit, as opposed to the global daily ceiling above. This is
+ * the "slow down" wall, not the "come back tomorrow" one, so it says so.
+ * Keyed by Language for the same reason BUSY_MESSAGE now is: a Dutch visitor
+ * should not hit an English dead end.
+ */
+export const TOO_FAST: Record<Language, string> = {
+  en: "That's a lot of questions in a short time. Give it a minute.",
+  nl: "Dat zijn veel vragen in korte tijd. Geef het even een minuut.",
+};
+
 /** Shown when the ElevenLabs free quota is gone. A note, not an error. */
 export const OUT_OF_VOICE: Record<Language, string> = {
   en: "Out of voice for this month. Still typing though.",
   nl: "Geen stem meer deze maand. Typen gaat nog wel.",
 };
 
-/** Returned instead of calling Claude once the global daily ceiling is hit. */
-export const BUSY_MESSAGE =
-  "I've had a lot of questions today, I'm out of answers and I'm tired. Email Arnav directly, arnavg1320@gmail.com.";
+/**
+ * Returned instead of calling Claude once the global daily ceiling is hit.
+ *
+ * ⚠️ Now keyed by Language and no longer prints the email address. It used to
+ * be a bare English string that sent the visitor to email — which meant the one
+ * state where the site most wants a booking was the one state that routed
+ * around the calendar, and a Dutch visitor got an English dead end. The widget
+ * appends OPEN_TO_WORK and renders the same "Book time with Arnav" CTA the cap
+ * message uses (Arnav 2026-08-29).
+ */
+export const BUSY_MESSAGE: Record<Language, string> = {
+  en: "I've had a lot of questions today, and I'm out of answers. Back tomorrow.",
+  nl: "Ik heb vandaag veel vragen gehad en ben door mijn antwoorden heen. Morgen weer.",
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 

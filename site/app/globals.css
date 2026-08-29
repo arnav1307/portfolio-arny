@@ -1636,6 +1636,14 @@ body {
   /* contain: the globe is decorative; its own paint shouldn't invalidate the
      rest of the page every frame. */
   contain: layout paint;
+  /* Without this, a touch that starts as a drag-to-spin gesture but ends up
+     scrolling the page can fire `pointercancel` instead of `pointerup`
+     (right-now.tsx's up() handler never runs), leaving `interacting` stuck
+     non-null and idle rotation permanently paused (Arnav 2026-08-29: "static
+     on phone... by default it should be spinning"). `none` tells the browser
+     this element owns the gesture outright — same as desktop drag, which
+     never had a competing scroll gesture to lose to. */
+  touch-action: none;
 }
 
 /* The floating city pill (ss10). Repositioned every frame from the globe's
@@ -2156,8 +2164,10 @@ body {
    cta code and replace it with the code down below") — mechanic ported from
    a styled-components snippet into plain CSS (this stack has no
    styled-components), colours mapped from the snippet's raw hex onto
-   --ink/--accent-red so dark mode and the eye-toggle still work. See
-   text-arrow-cta.tsx for the full provenance note. */
+   --ink/--accent-blue so dark mode and the eye-toggle still work. Swapped
+   from --accent-red to --accent-blue (Arnav 2026-08-29) to match the
+   scramble-hover blue instead of the cherry red. See text-arrow-cta.tsx for
+   the full provenance note. */
 .text-arrow-cta {
   position: relative;
   display: inline-flex;
@@ -2185,7 +2195,7 @@ body {
   inset: 0;
   width: 0%;
   overflow: hidden;
-  color: var(--accent-red);
+  color: var(--accent-blue);
   white-space: nowrap;
   transition: width 0.3s ease-out;
 }
@@ -2204,7 +2214,7 @@ body {
   bottom: -3px;
   width: 0;
   height: 2px;
-  background: var(--accent-red);
+  background: var(--accent-blue);
   transition: width 0.3s ease-out;
 }
 
@@ -2222,7 +2232,7 @@ body {
 
 .text-arrow-cta:hover .text-arrow-cta-icon,
 .text-arrow-cta:focus-visible .text-arrow-cta-icon {
-  color: var(--accent-red);
+  color: var(--accent-blue);
   transform: translateX(4px);
 }
 
@@ -2243,6 +2253,30 @@ body {
   .text-arrow-cta::after,
   .text-arrow-cta-icon {
     transition: none;
+  }
+}
+
+/* Touch (Arnav 2026-08-29): the tip's rest position is JS-written cursor
+   coordinates (--work-nda-x/-y) that only ever get set by mousemove — a
+   touch device never fires that event, so the tip was stuck at the card's
+   top-left fallback forever, and :hover never applies so opacity never left
+   0. Reposition it as a STATIC pill directly above the lock icon instead
+   (making .work-nda the positioned ancestor here, not .work-card — the
+   cursor-tracking scheme this override replaces), and reveal on :active/tap
+   via the existing :focus-visible rule above (tabIndex=0 already on
+   .work-nda, so a tap both focuses and shows it). */
+@media (hover: none) {
+  .work-nda {
+    position: relative;
+  }
+  .work-nda-tip {
+    top: auto;
+    left: 50%;
+    bottom: 100%;
+    translate: -50% -10px;
+  }
+  .work-nda:active .work-nda-tip {
+    opacity: 1;
   }
 }
 
@@ -2761,6 +2795,48 @@ body {
      whole thing"). Allow wrap here; desktop's nowrap is untouched. */
   .work-blurb {
     white-space: normal;
+  }
+
+  /* Desk's "Open to freelance and full-time opportunities." status line is
+     `whitespace-nowrap` inline in desk.tsx (desktop-only sizing assumption,
+     same failure as .work-blurb above) — on phone it ran off past the stage
+     edge (Arnav 2026-08-29: "sentence is breaking"). [data-desk-status] scopes
+     this to just the status line, not the object labels ("Work"/"Contact")
+     that share .desk-status-label and are short enough to never wrap anyway. */
+  [data-desk-status] {
+    left: 16px !important;
+    right: 16px;
+    align-items: flex-start !important;
+  }
+  [data-desk-status] .desk-status-dot {
+    margin-top: 5px;
+    flex: none;
+  }
+  [data-desk-status] .desk-status-label {
+    white-space: normal;
+    font-size: 12px;
+  }
+
+  /* Phone and coffee objects (desk.tsx STAGE.objects) genuinely overlap at
+     mobile stage size — measured live: phone's icon bottom sat 20px BELOW
+     coffee's icon top (Arnav 2026-08-29: "icons overlapping with text").
+     Every object's width comes from pct(size, STAGE_W) — horizontal only,
+     unaffected by height — while position comes from pct(x/y, STAGE_W/H), a
+     percentage of the STAGE'S OWN rendered box, not the literal 1152/560
+     constants. Stretching the stage taller therefore spaces every object's Y
+     position further apart without moving a single coordinate in desk.tsx or
+     resizing anything. */
+  .desk-stage {
+    aspect-ratio: 1152 / 900 !important;
+  }
+  /* Folder and figurine labels ("Work" / "Me🧇") still crossed each other
+     after the stretch above (measured: 5px vertical overlap) — they sit close
+     together horizontally (STAGE.x 235 vs 411) so the stretch that fixed
+     phone/coffee doesn't buy them enough room. Shrinking just the label text
+     is the smallest change that clears it without another pass of stage
+     tuning. */
+  .desk-item-shell .desk-status-label {
+    font-size: 11px;
   }
 }
 
@@ -3675,6 +3751,22 @@ body {
   color: var(--ink-soft);
   font-weight: 400;
   margin-top: -4px;
+}
+
+/* Third line of the cap: open to work. Reads at full ink weight, unlike the
+   reset line above it — this one is the reason the CTA underneath exists, so it
+   should not look like a footnote (Arnav 2026-08-29). */
+.agent-cap p.agent-cap-open {
+  color: var(--ink);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* The quota variant carries ONLY the button: /api/ask already streamed the wall
+   copy and the open-to-work line into the transcript as an assistant turn, so
+   repeating either here would say it twice. */
+.agent-cap--quota {
+  padding-top: 0;
 }
 
 .agent-cap button {

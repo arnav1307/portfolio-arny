@@ -6,7 +6,9 @@ import {
   MAX_HISTORY,
   MAX_INPUT_CHARS,
   MAX_TOKENS,
+  OPEN_TO_WORK,
   SYSTEM_PROMPT,
+  TOO_FAST,
 } from "@/lib/agent-prompt";
 import {
   checkAndRecord,
@@ -40,7 +42,7 @@ type Msg = { role: "user" | "assistant"; content: string };
 const enc = new TextEncoder();
 const line = (obj: unknown) => enc.encode(JSON.stringify(obj) + "\n");
 
-function plain(text: string, status = 200) {
+function plain(text: string, status = 200, extraHeaders?: Record<string, string>) {
   const stream = new ReadableStream({
     start(controller) {
       controller.enqueue(line({ t: text }));
@@ -49,7 +51,11 @@ function plain(text: string, status = 200) {
   });
   return new Response(stream, {
     status,
-    headers: { "Content-Type": "application/x-ndjson", "Cache-Control": "no-store" },
+    headers: {
+      "Content-Type": "application/x-ndjson",
+      "Cache-Control": "no-store",
+      ...extraHeaders,
+    },
   });
 }
 
@@ -90,12 +96,20 @@ export async function POST(req: Request) {
   const ip = clientIp(req);
   const guard = checkAndRecord(ip);
   if (!guard.ok) {
-    return plain(
-      guard.reason === "global"
-        ? BUSY_MESSAGE
-        : "That's a lot of questions in a short time. Give it a minute, or just email Arnav at arnavg1320@gmail.com.",
-      429,
-    );
+    // Only the GLOBAL ceiling gets the open-to-work pitch (Arnav 2026-08-29). The per-IP wall lifts in about a
+    // minute, so following "give it a minute" with "book a call" reads as a
+    // brush-off for something that is not actually a dead end. Ted is out of
+    // answers for the day in one case and briefly busy in the other; only the
+    // first is a reason to move the conversation to a call.
+    if (guard.reason === "global") {
+      // The header tells the widget to render the booking CTA under this turn.
+      // A body flag would not work: error copy streams in the same `{t}` shape
+      // as a real answer, so the client cannot tell them apart from content.
+      return plain(`${BUSY_MESSAGE[lang]}\n\n${OPEN_TO_WORK[lang]}`, 429, {
+        "X-Agent-Wall": "global",
+      });
+    }
+    return plain(TOO_FAST[lang], 429);
   }
 
   const upstream = await fetch("https://api.anthropic.com/v1/messages", {
