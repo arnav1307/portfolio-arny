@@ -435,7 +435,9 @@ export function AboutHero() {
                       {ABOUT_ICONS[section.highlight.icon as AboutIconName]}
                     </span>
                     <span className="flex flex-col gap-3">
-                      <span className="about-card-label">
+                      {/* Shift-label, not card-label: the mockup runs this one
+                          at 500 like the diagram's labels, not the cards' 600. */}
+                      <span className="about-shift-label">
                         {section.highlight.label}
                       </span>
                       <h3 className="about-highlight-heading">

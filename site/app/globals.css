@@ -954,18 +954,24 @@ body {
     background: var(--chip, var(--tint-rect));
     color: var(--ink);
   }
+  /* 600 on the card labels, 500 on the diagram's (Arnav's mockup weights,
+     2026-08-29) — the cards carry more of the reading load, so their eyebrow
+     is a touch heavier than the bar/column labels. */
   .about-card-label {
     font-family: var(--font-display);
     font-size: 11px;
-    font-weight: 400;
+    font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
   }
+  /* Regular weight, same call as .about-highlight-heading (Arnav 2026-08-29):
+     the cards sit under a 32px/700 section heading, and four bold card titles
+     under it flattened the hierarchy instead of sitting below it. */
   .about-card-heading {
     font-family: var(--font-display);
     font-size: 19px;
-    font-weight: 700;
+    font-weight: 400;
     line-height: 1.2;
     letter-spacing: -0.015em;
     color: var(--ink);
@@ -995,7 +1001,7 @@ body {
   .about-shift-label {
     font-family: var(--font-display);
     font-size: 11px;
-    font-weight: 400;
+    font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
@@ -1041,6 +1047,7 @@ body {
   .about-shift-col-label {
     font-family: var(--font-display);
     font-size: 11px;
+    font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
@@ -1077,11 +1084,14 @@ body {
     border-radius: 16px;
     background: var(--paper-raised);
   }
+  /* Regular weight, not bold (Arnav 2026-08-29, set in the mockup). At 25px the
+     statement already has the size to carry the card; bolding it as well made
+     it shout next to the section's own 32px/700 heading directly above. */
   .about-highlight-heading {
     font-family: var(--font-display);
     font-size: 25px;
-    font-weight: 700;
-    line-height: 1.25;
+    font-weight: 400;
+    line-height: 1.2;
     letter-spacing: -0.02em;
     color: var(--ink);
   }
