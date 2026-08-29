@@ -256,6 +256,37 @@ export function OpeningDP() {
     mm.add("(max-width: 900px)", () => {
       gsap.set(centerLayer, { opacity: 1, y: 0 });
       captions.forEach((el) => gsap.set(el, { opacity: 0 }));
+
+      /* Keep images off the hero text band (Arnav 2026-08-29, screenshot:
+         images crossing "Hi, I'm Arnav" directly). Crowding/overlapping EACH
+         OTHER is fine and matches the desktop chaos layout on purpose — only
+         the text band is off-limits. Measured after the hero's own entrance
+         (rAF below), so centerLayer's real rendered position is used rather
+         than a guessed fraction. Nudges vertically by the shortest distance
+         to clear the band; horizontal position is untouched. */
+      requestAnimationFrame(() => {
+        const stageRect = stage.getBoundingClientRect();
+        const heroContent = centerLayer.querySelector<HTMLElement>(
+          ".flex.flex-col.items-center",
+        );
+        const heroRect = heroContent?.getBoundingClientRect();
+        if (!heroRect) return;
+        const bandTop = heroRect.top - stageRect.top - 16;
+        const bandBottom = heroRect.bottom - stageRect.top + 16;
+
+        objects.forEach((el) => {
+          const r = el.getBoundingClientRect();
+          const top = r.top - stageRect.top;
+          const bottom = r.bottom - stageRect.top;
+          const overlaps = top < bandBottom && bottom > bandTop;
+          if (!overlaps) return;
+          const distUp = bottom - bandTop;
+          const distDown = bandBottom - top;
+          const dy =
+            distUp < distDown ? -(distUp + 12) : distDown + 12;
+          gsap.set(el, { y: dy });
+        });
+      });
     });
 
     mm.add(
@@ -407,7 +438,7 @@ export function OpeningDP() {
             the inset board to hug the STAGE edges (half in / half out). Only
             the dither layer clips, so the field stays inside the box. */}
         <div
-          className="absolute overflow-visible"
+          className="opening-dp-board-box absolute overflow-visible"
           style={{ ...BOARD_BOX, isolation: "isolate" }}
         >
           <div

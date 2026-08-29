@@ -2737,6 +2737,23 @@ body {
      the matching gsap.matchMedia("(max-width: 900px)") branch in
      opening-dp.tsx that skips the pin/scrub/toggle entirely below this width
      and reveals the hero immediately instead of on scroll progress. */
+  /* Real board box, not the dead .opening-dp-board class below (that class
+     hasn't matched anything in the JSX since a refactor moved sizing to
+     BOARD_BOX's inline styles — confirmed via grep, the three rules on that
+     class were silent no-ops). BOARD_BOX centres the box at top:50% of the
+     stage, which on a phone let top-slot images poke up under the fixed nav
+     (Arnav 2026-08-29, screenshot). Anchoring from the top and starting
+     below the nav's measured 86px bottom edge (+ margin) fixes that
+     directly, and widening the box gives the "populate it well" density
+     the reference screenshot has, instead of a shrunk 84vw box with the
+     same sparse item count reading as gappy. */
+  #opening-dp .opening-dp-board-box {
+    top: 100px !important;
+    bottom: 24px !important;
+    height: auto !important;
+    width: min(98vw, 900px) !important;
+    transform: translateX(-50%) !important;
+  }
   #opening-dp .opening-dp-board {
     width: min(94vw, calc(72svh * 1500 / 1102)) !important;
   }
@@ -3486,7 +3503,11 @@ body {
   letter-spacing: -0.01em;
 }
 
-.agent-turn[data-role="assistant"] p {
+/* :not(.agent-turn--cap) — the cap message reuses .agent-turn for its LAYOUT
+   (copy left, Ted right) but supplies its own single bubble. Without this, every
+   <p> inside the cap got the bubble's border and background and the three lines
+   rendered as three stacked bubbles (Arnav 2026-08-29). */
+.agent-turn[data-role="assistant"]:not(.agent-turn--cap) p {
   flex: 1;
   min-width: 0;
   padding: 9px 13px;
@@ -3683,11 +3704,35 @@ body {
 }
 
 .agent-cap {
-  padding: 12px;
+  /* Sits in an .agent-turn now, so it takes the assistant bubble's geometry:
+     flex child, same corner treatment, Ted beside it rather than inside it. */
+  flex: 1;
+  min-width: 0;
+  padding: 9px 13px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 14px 14px 14px 2px;
   background: var(--paper);
   animation: agent-cap-in 320ms var(--ease-signature) 80ms both;
+}
+
+/* The sleeping crab beside the cap. Same slot the speak orb occupies on a
+   normal answer, so the column edge does not shift on the last message. */
+.agent-orb--sleeping {
+  pointer-events: none;
+}
+
+/* "slot" — the one word that carries the action. Underlined so it reads as a
+   link inside running text, in the accent rather than the body ink. */
+.agent-cap-inline {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: opacity var(--dur-micro) var(--ease-signature);
+}
+
+.agent-cap-inline:hover {
+  opacity: 0.7;
 }
 
 @keyframes agent-cap-in {
@@ -3702,8 +3747,11 @@ body {
 }
 
 .agent-cap p {
-  color: var(--ink);
-  margin-bottom: 10px;
+  color: var(--ink-soft);
+  /* 6px, not 10px. Inside a single bubble these are paragraphs of one message;
+     at 10px with the bubble's own padding they read as three stacked bubbles
+     (Arnav 2026-08-29, screenshot). */
+  margin-bottom: 6px;
   font-size: var(--agent-size);
   font-weight: var(--agent-weight);
   line-height: var(--agent-line);
@@ -3794,6 +3842,8 @@ body {
 
 /* Second line of the cap: the reset day. Deliberately quieter than the first —
    the CTA is the primary action, this is the consolation prize. */
+.agent-cap p:last-child { margin-bottom: 0; }
+
 .agent-cap p.agent-cap-reset {
   color: var(--ink-soft);
   font-weight: var(--agent-weight);

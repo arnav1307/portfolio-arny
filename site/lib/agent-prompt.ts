@@ -194,8 +194,35 @@ export function capResetLine(lang: Language, resetAt: number): string {
  * line with a third owner, and folding it into either would render it in the
  * wrong place for the two non-cap states.
  */
+/**
+ * Split into three parts so ONE WORD can be the link (Arnav 2026-08-29). The
+ * middle piece is rendered as an anchor that scrolls to the Cal embed; the CTA
+ * row underneath is gone, because a sentence that already contains the action
+ * does not need a button repeating it.
+ *
+ * Kept as three strings rather than one with a placeholder token: a `{slot}`
+ * marker would have to be split at render time in both languages, and the
+ * Dutch link word sits in a different position in the sentence.
+ */
+export const OPEN_TO_WORK_PARTS: Record<
+  Language,
+  { before: string; link: string; after: string }
+> = {
+  en: {
+    before: "He's looking for his next thing, by the way, and he'd genuinely like to hear from you. Grab a ",
+    link: "slot",
+    after: " whenever it suits.",
+  },
+  nl: {
+    before: "Hij zoekt trouwens iets nieuws, en hij hoort graag van je. Pak een ",
+    link: "moment",
+    after: " dat jou uitkomt.",
+  },
+};
+
+/** Flat form, for the streamed API walls where markup is not an option. */
 export const OPEN_TO_WORK: Record<Language, string> = {
-  en: "He's looking for his next thing, by the way, and he'd genuinely like to hear from you. Grab a slot whenever suits.",
+  en: "He's looking for his next thing, by the way, and he'd genuinely like to hear from you. Grab a slot whenever it suits.",
   nl: "Hij zoekt trouwens iets nieuws, en hij hoort graag van je. Pak een moment dat jou uitkomt.",
 };
 

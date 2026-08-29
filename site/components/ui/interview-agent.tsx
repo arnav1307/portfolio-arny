@@ -22,7 +22,7 @@ import {
   GREETING,
   type Language,
   LANGUAGES,
-  OPEN_TO_WORK,
+  OPEN_TO_WORK_PARTS,
   OPEN_TO_WORK_SHORT,
   OUT_OF_VOICE,
   QUESTION_LIMIT,
@@ -139,6 +139,22 @@ const THINKING_PHRASES = ["Baking...", "Vibing...", "Manifesting..."] as const;
  *  be read, which made it feel frantic rather than playful. */
 const THINKING_CYCLE_MS = 2400;
 
+/**
+ * Minimum time the thinking line stays on screen (Arnav 2026-08-29: "it hardly
+ * shows, the time is too quick and it passes by real quick").
+ *
+ * Haiku's first token usually lands in a few hundred milliseconds, so the status
+ * was being replaced before it could be read — the phrase never even reached its
+ * first cycle, and the elapsed counter never left 0s. Holding the first chunk
+ * back until this elapses means the line is always legible, and the answer then
+ * streams normally from wherever it has buffered to.
+ *
+ * ⚠️ This delays the ANSWER, so it is a real cost paid for a legible state. 1.1s
+ * is about the shortest that still reads as a beat rather than a flicker; going
+ * much past 1.5s starts to feel like the agent is slow rather than thinking.
+ */
+const THINKING_MIN_MS = 1100;
+
 function shuffleThinking(): string[] {
   const next = [...THINKING_PHRASES];
   for (let i = next.length - 1; i > 0; i--) {
@@ -182,16 +198,26 @@ function ThinkingStar() {
  * it client-side until the stream ends, and inventing one would be a fake number
  * on a page whose whole argument is that the numbers are real.
  */
-function ThinkingStatus({ phrase }: { phrase: string }) {
+function ThinkingStatus({ phrase, startedAt }: { phrase: string; startedAt: number }) {
+  /* Seeded from startedAt during RENDER, not in an effect — the seed has to be
+     right on the very first paint, and setState inside an effect body is both a
+     cascading render and an eslint error here.
+     startedAt comes from the parent rather than being captured locally, because
+     this component re-renders every time the phrase cycles; a locally captured
+     start restarted the count, which showed as the counter jumping 0s, 1s, 3s,
+     5s instead of ticking evenly. */
   const [secs, setSecs] = useState(0);
-
   useEffect(() => {
-    const started = Date.now();
+    /* Date.now() lives in the interval callback, never in render — reading a
+       clock during render is impure (the same value would differ between two
+       renders of the same state) and eslint rejects it. The first tick lands
+       250ms in, which is invisible: the counter reads 0s for its first second
+       either way. */
     const id = window.setInterval(() => {
-      setSecs(Math.floor((Date.now() - started) / 1000));
-    }, 1000);
+      setSecs(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
+    }, 250);
     return () => window.clearInterval(id);
-  }, []);
+  }, [startedAt]);
 
   return (
     <span
@@ -235,6 +261,10 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
    */
   const [outOfAnswers, setOutOfAnswers] = useState(false);
   const [thinkIdx, setThinkIdx] = useState(0);
+  /** When the current ask started. Drives the thinking line's elapsed counter,
+   *  and lives here rather than in ThinkingStatus so the phrase cycling (which
+   *  re-renders that component) cannot reset it. */
+  const [thinkStart, setThinkStart] = useState(0);
   const [thinkQueue, setThinkQueue] = useState<string[]>(() => [...THINKING_PHRASES]);
   const [asked, setAsked] = useState(0);
   /** Timestamp of this visitor's FIRST question. Drives the reset day in the cap. */
@@ -283,7 +313,10 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
   const suggestions = SUGGESTED_QUESTIONS[lang];
   const remaining = Math.max(0, QUESTION_LIMIT - asked);
   const langLabel = LANGUAGES.find((l) => l.code === lang)?.label ?? "English";
-  const thinkingPhrase = thinkQueue[thinkIdx] ?? THINKING_PHRASES[0];
+  /* Wraps here rather than in the interval's updater, which no longer knows the
+     queue length — see the cycle effect for why that dependency was removed. */
+  const thinkingPhrase =
+    thinkQueue[thinkIdx % thinkQueue.length] ?? THINKING_PHRASES[0];
   /** Status only until the first token paints — not over a visible answer. */
   const waitingOnAnswer =
     busy && turns.some((t) => t.role === "assistant" && t.content.length === 0);
@@ -396,13 +429,17 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
   );
 
   // Cycle the shuffled thinking sticker while waiting on the first token.
+  // ⚠️ Depends on `waitingOnAnswer` ALONE. Including thinkQueue.length re-ran
+  // the effect on each shuffle, tearing down and rebuilding the interval so the
+  // phrase changed far faster than THINKING_CYCLE_MS (measured at ~200ms, not
+  // 2400ms). The length is read inside the updater, where it is always current.
   useEffect(() => {
     if (!waitingOnAnswer) return;
     const id = window.setInterval(() => {
-      setThinkIdx((i) => (i + 1) % thinkQueue.length);
+      setThinkIdx((i) => i + 1);
     }, THINKING_CYCLE_MS);
     return () => window.clearInterval(id);
-  }, [waitingOnAnswer, thinkQueue.length]);
+  }, [waitingOnAnswer]);
 
   // Custom lang menu — native <select> paints the OS chrome (dark + blue tick
   // on macOS) and fights the paper panel. Close on outside click.
@@ -619,6 +656,9 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
       const history = [...turns, { role: "user" as const, content: text }];
       setTurns([...history, { role: "assistant", content: "" }]);
 
+      setThinkStart(Date.now());
+      setThinkIdx(0);
+
       const controller = new AbortController();
       askAbort.current = controller;
 
@@ -654,6 +694,10 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
 
         const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const rate = reduced ? 10_000 : CHARS_PER_SEC;
+        /* Nothing paints before this, so the thinking line is guaranteed to be
+           readable. Reduced motion skips the hold: someone who has asked for
+           less movement wants the answer, not a staged pause. */
+        const revealFrom = performance.now() + (reduced ? 0 : THINKING_MIN_MS);
 
         const paint = (content: string, id?: string) => {
           setTurns((prev) => {
@@ -668,6 +712,15 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
         };
 
         const tickReveal = (now: number) => {
+          // Hold the whole reveal until the thinking beat has been seen. The
+          // stream keeps buffering into `network` meanwhile, so nothing is lost
+          // and the answer starts from whatever has arrived.
+          if (now < revealFrom) {
+            lastTick = now;
+            revealRaf.current = requestAnimationFrame(tickReveal);
+            return;
+          }
+
           const elapsed = now - lastTick;
           const add = Math.floor((elapsed / 1000) * rate);
           if (add > 0) {
@@ -864,18 +917,20 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
    * to sleep. This is the ONLY sleeping Ted; the cap box deliberately has none.
    */
   /**
-   * Is there already a speak control on screen that can carry the sleeping Ted?
-   * Mirrors the render condition on the orb exactly — if that condition changes,
-   * change this with it or the cap will show a second crab.
+   * ONE Ted on screen at a time, and once capped he belongs to the cap message
+   * (Arnav 2026-08-29). The cap now always renders a sleeping Ted beside it, so
+   * the speak control on the last answer has to go — otherwise the final answer
+   * and the cap sit stacked with a crab each, which is the "two messages
+   * displaying in one go" problem.
+   *
+   * The audio itself is unaffected: a clip already playing keeps playing, it
+   * just loses its button once the conversation is over.
    */
-  const hasSpeakableAnswer =
-    lang === "en" &&
-    !voiceGone &&
-    turns.some((t) => t.role === "assistant" && Boolean(t.answerId));
+  const showSpeakControls = !capped;
 
   const orbState = (answerId: string): TedOrbState => {
     if (audio?.id === answerId) return audio.state;
-    return capped ? "sleeping" : "idle";
+    return "idle";
   };
 
   return (
@@ -1049,7 +1104,7 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
               <p>
                 {capitalizeLead(turn.content)}
                 {turn.role === "assistant" && !turn.content && (
-                  <ThinkingStatus phrase={thinkingPhrase} />
+                  <ThinkingStatus phrase={thinkingPhrase} startedAt={thinkStart} />
                 )}
               </p>
 
@@ -1065,6 +1120,7 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
               {turn.role === "assistant" &&
                 Boolean(turn.content) &&
                 !voiceGone &&
+                showSpeakControls &&
                 lang === "en" &&
                 (turn.answerId ? (
                   <button
@@ -1130,39 +1186,44 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
           )}
 
           {capped && (
-            <div className="agent-cap">
-              {!hasSpeakableAnswer && (
-                <span className="agent-cap-ted" aria-hidden>
-                  <TedOrb state="sleeping" size={44} />
-                </span>
-              )}
-              <p>{CAP_MESSAGE[lang]}</p>
-              {askedAt !== null && (
-                <p className="agent-cap-reset">
-                  {capResetLine(lang, askedAt + RESET_MS)}
+            /* Laid out like an assistant turn — copy left, Ted right — so the
+               cap reads as Ted's last message rather than a separate panel
+               that appeared underneath one (Arnav 2026-08-29). */
+            <div className="agent-turn agent-turn--cap" data-role="assistant">
+              <div className="agent-cap">
+                <p>{CAP_MESSAGE[lang]}</p>
+                {askedAt !== null && (
+                  <p className="agent-cap-reset">
+                    {capResetLine(lang, askedAt + RESET_MS)}
+                  </p>
+                )}
+                {/* "slot" IS the link — no CTA row underneath. A sentence that
+                    already contains the action does not need a button below it
+                    repeating the same thing. */}
+                <p className="agent-cap-open">
+                  {OPEN_TO_WORK_PARTS[lang].before}
+                  <Link
+                    href="/#contact"
+                    className="agent-cap-inline"
+                    data-cursor="pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      goToContact();
+                    }}
+                  >
+                    {OPEN_TO_WORK_PARTS[lang].link}
+                  </Link>
+                  {OPEN_TO_WORK_PARTS[lang].after}
                 </p>
-              )}
-              {/* Third line, its own owner — see OPEN_TO_WORK's doc. Sits above
-                  the CTA so the button is the answer to the sentence. */}
-              <p className="agent-cap-open">{OPEN_TO_WORK[lang]}</p>
-              {/* A real <a href="/#contact">, not a button (Arnav 2026-08-29).
-                  It still scrolls to the embedded calendar — preventDefault +
-                  goToContact — but being an anchor means it can be copied,
-                  middle-clicked or opened in a tab, and it lands on the Cal
-                  embed rather than an external page. No separate link line. */}
-              <Link
-                href="/#contact"
-                data-cursor="pointer"
-                onClick={(e) => {
-                  e.preventDefault();
-                  goToContact();
-                }}
-              >
-                <span>{CAP_CTA[lang]}</span>
-                <span className="agent-cap-arrow" aria-hidden>
-                  →
-                </span>
-              </Link>
+              </div>
+
+              {/* Sleeping Ted rides beside the cap exactly like the orb rides
+                  beside every other assistant turn. Previously he only appeared
+                  when no speakable answer existed, which left the cap as the one
+                  message on the page with nothing next to it. */}
+              <span className="agent-orb agent-orb--sleeping" aria-hidden>
+                <TedOrb state="sleeping" />
+              </span>
             </div>
           )}
         </div>
