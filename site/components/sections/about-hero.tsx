@@ -494,22 +494,29 @@ export function AboutHero() {
               {ABOUT_QUOTE}
             </blockquote>
           </figure>
-
-          {/* Back to home — the nav has no "back", so the page ends with one.
-              Reverse Text Arrow CTA (Arnav 2026-08-26: same component as
-              Selected Work's CTA, mirrored). */}
-          <TextArrowCta
-            href="/"
-            reverse
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/");
-            }}
-            className="mt-16"
-          >
-            Back
-          </TextArrowCta>
         </div>
+
+        {/* Back to home — the nav has no "back", so the page ends with one.
+            Reverse Text Arrow CTA (Arnav 2026-08-26: same component as
+            Selected Work's CTA, mirrored). Pulled out as its own grid child
+            (Arnav 2026-08-29: "sidebar... above the back button but below be
+            curious, just exchange them") — .about-rail's order needs to land
+            BETWEEN the quote and this CTA on mobile, which a nested element
+            can't do purely via CSS order (grid order only reorders direct
+            grid children). Desktop is unaffected: at the 260px+fluid two-
+            column width this renders in its old visual spot, just one grid
+            level up. */}
+        <TextArrowCta
+          href="/"
+          reverse
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("/");
+          }}
+          className="about-back-cta mt-16"
+        >
+          Back
+        </TextArrowCta>
       </div>
     </section>
   );

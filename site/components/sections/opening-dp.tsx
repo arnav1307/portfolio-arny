@@ -444,7 +444,7 @@ export function OpeningDP() {
           <div
             ref={ditherLayerRef}
             aria-hidden
-            className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+            className="opening-dp-dither pointer-events-none absolute inset-0 -z-10 overflow-hidden"
             style={{ opacity: 0.85 }}
           >
             {/* Line grid, per ss13 — a bounded rectangle of cells. */}
@@ -594,14 +594,14 @@ export function OpeningDP() {
         <div className="opening-dp-modes absolute inset-x-0 bottom-8 z-20 flex items-center justify-center gap-3">
           {(
             [
-              { id: "chaos" as const, label: "Chaos Mode on", icon: "puzzle.svg", scale: 1 },
+              { id: "chaos" as const, label: "Chaos mode on", icon: "puzzle.svg", scale: 1 },
               /* broom.png's actual artwork sits inside a wide transparent
                  margin on its 50×50 canvas (puzzle.svg's path fills nearly
                  the whole viewBox) — at the same mask-size the broom read
                  visibly smaller (Arnav 2026-08-27: "increase the size of the
                  broom... to match it with the size of the puzzle"). Scaling
                  the mask up compensates for the source padding difference. */
-              { id: "clean" as const, label: "Clean Mode on", icon: "broom.png", scale: 1.55 },
+              { id: "clean" as const, label: "Clean mode on", icon: "broom.png", scale: 1.55 },
             ] as const
           ).map(({ id, label, icon, scale }) => {
             const on = mode === id;

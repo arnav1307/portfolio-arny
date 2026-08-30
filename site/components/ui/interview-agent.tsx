@@ -551,7 +551,13 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
     if (open) requestAnimationFrame(() => inputRef.current?.focus());
   }, [open]);
 
+  /* Scroll to the newest turn — but NOT on first open. With no turns yet there
+     is nothing below the greeting to scroll to, and on a phone (where the panel
+     is short and the greeting is three lines) this scrolled straight past the
+     first two lines, so the widget opened mid-sentence (Arnav 2026-08-30,
+     iOS-width check). Only follow the conversation once there is one. */
   useEffect(() => {
+    if (turns.length === 0) return;
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [turns, capped]);

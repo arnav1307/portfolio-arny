@@ -211,7 +211,7 @@ export const OPEN_TO_WORK_PARTS: Record<
   en: {
     before: "He's looking for his next thing, by the way, and he'd genuinely like to hear from you. Grab a ",
     link: "slot",
-    after: " whenever it suits.",
+    after: " whenever it suits!",
   },
   nl: {
     before: "Hij zoekt trouwens iets nieuws, en hij hoort graag van je. Pak een ",

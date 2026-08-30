@@ -2615,6 +2615,15 @@ body {
   align-items: start;
 }
 
+/* The Back CTA is now a third grid child (about-hero.tsx, pulled out of the
+   content column so mobile's `order` can slot .about-rail between it and the
+   quote above it — see that file's comment). Without this it auto-flows into
+   row 2, column 1 — directly under the rail instead of under the content
+   column it visually belongs to. */
+.about-back-cta {
+  grid-column: 2;
+}
+
 /* Metadata rail.
    NOTE: `position: sticky` does NOT work here and was removed after being
    measured failing. Under ScrollSmoother the nearest scrolling ancestor is
@@ -2646,8 +2655,16 @@ body {
     /* Pushed after the case-study column (Arnav 2026-08-29: "I want the side
        bar column to be shown at the end") — grid item order, no markup
        change. The rail's own internal layout (chips/facts card/socials
-       stacked) is untouched, only its position in the page moved. */
+       stacked) is untouched, only its position in the page moved.
+       ⚠️ SUPERSEDED same day: "above the back button but below be curious...
+       just exchange them" — order:2 now lands the rail BETWEEN the content
+       column (order 0, default) and the Back CTA (order 3) below, rather
+       than after everything. */
     order: 2;
+  }
+  .about-back-cta {
+    grid-column: 1;
+    order: 3;
   }
 
   /* --nav-h is a static 64px constant (globals.css :root), but .nav-plain-bar
@@ -2756,6 +2773,14 @@ body {
   }
   #opening-dp .opening-dp-board {
     width: min(94vw, calc(72svh * 1500 / 1102)) !important;
+  }
+  /* Dot grid + line texture dropped on mobile (Arnav 2026-08-29: "dot grid is
+     not needed only the images") — this layer carries both the visible
+     line-grid background AND the interactive DotField canvas underneath the
+     images; static mobile has no drag/hover to make the field react to
+     anyway, so hiding the whole layer removes texture and canvas together. */
+  #opening-dp .opening-dp-dither {
+    display: none !important;
   }
   #opening-dp .opening-dp-center {
     padding-inline: 20px;
@@ -4055,11 +4080,34 @@ body {
     --agent-right: 16px;
     --agent-bottom: 20px;
     --agent-width: min(360px, calc(100vw - 32px));
-    --agent-height: min(420px, calc(100vh - 120px));
+    /* Taller on phone (Arnav 2026-08-30). 420px left ~280px of readable area
+       once the header and composer took their share, so the three-line greeting
+       alone overflowed before a single answer arrived. Using svh rather than vh
+       so the mobile browser's collapsing address bar does not resize the panel
+       mid-conversation. */
+    --agent-height: min(560px, calc(100svh - 140px));
   }
 
   .agent-panel {
     bottom: calc(var(--agent-bottom) + 52px + var(--agent-lift));
+  }
+
+  /* Panel type scales UP on phone (Arnav 2026-08-30, before an iOS Simulator
+     pass). The desktop values are tuned for a ~360px panel floating beside a
+     full-width page, where small text reads as deliberate restraint. On a
+     phone that same panel is nearly the whole screen and is held at arm's
+     length rather than sat in front of, so 12.5px stops being restrained and
+     starts being hard to read.
+     14px body / 13px UI is roughly the desktop step back up, and matches the
+     minimum this site uses for reading copy anywhere else.
+     ⚠️ Set on #agent-root, not :root — the tokens are declared on :root, and a
+     media query on :root would be overridden by nothing but would also leak to
+     any future consumer of these names outside the widget. */
+  .agent-panel,
+  .agent-launcher {
+    --agent-size: 14px;
+    --agent-size-ui: 13px;
+    --agent-line: 1.6;
   }
 
   /* iOS Safari auto-zooms the whole page on focus for any input under 16px
