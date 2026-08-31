@@ -2315,13 +2315,36 @@ body {
    from --accent-red to --accent-blue (Arnav 2026-08-29) to match the
    scramble-hover blue instead of the cherry red. See text-arrow-cta.tsx for
    the full provenance note. */
+/* ┌─ TUNE THE CTA HERE ────────────────────────────────────────────────────┐
+   Every dimension of both CTAs ("More on how I work", "Back") lives in these
+   six values. Nothing else in this component carries a hardcoded px, and the
+   arrow SVG deliberately ships without width/height attributes so it follows
+   --cta-arrow rather than needing a second edit in the .tsx.
+
+     --cta-size           label type size                16px
+     --cta-gap            space between label and arrow   8px
+     --cta-arrow          arrow box, width and height    15px
+     --cta-underline      underline thickness             2px
+     --cta-underline-gap  underline distance below text   3px
+     --cta-travel         how far the arrow slides        4px
+
+   Colour is deliberately NOT here: everything takes --ink so the eye-toggle
+   keeps working. See text-arrow-cta.tsx for why the accent was removed.
+   └────────────────────────────────────────────────────────────────────────┘ */
 .text-arrow-cta {
+  --cta-size: 16px;
+  --cta-gap: 8px;
+  --cta-arrow: 15px;
+  --cta-underline: 2px;
+  --cta-underline-gap: 3px;
+  --cta-travel: 4px;
+
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--cta-gap);
   font-family: var(--font-mono);
-  font-size: 15px;
+  font-size: var(--cta-size);
   /* Regular, not 600 (Arnav 2026-08-28: "too bold"). */
   font-weight: 400;
   color: var(--ink);
@@ -2331,37 +2354,16 @@ body {
   position: relative;
 }
 
-/* The hover-colour copy of the label, clipped to 0 width at rest and
-   revealed left-to-right on hover — the reference's `content: "Subscribe"`
-   literal, generalised to `attr(data-text)` so it works for both this
-   component's real copy ("More on how I work " / "Back") without a second
-   hardcoded string to keep in sync. */
-.text-arrow-cta-label::before {
-  content: attr(data-text);
-  position: absolute;
-  inset: 0;
-  width: 0%;
-  overflow: hidden;
-  color: var(--accent-blue);
-  white-space: nowrap;
-  transition: width 0.3s ease-out;
-}
-
-.text-arrow-cta:hover .text-arrow-cta-label::before,
-.text-arrow-cta:focus-visible .text-arrow-cta-label::before {
-  width: 100%;
-}
-
 /* Sliding underline — grows from the left on hover, same colour/timing as
    the label reveal. */
 .text-arrow-cta::after {
   content: "";
   position: absolute;
   left: 0;
-  bottom: -3px;
+  bottom: calc(var(--cta-underline-gap) * -1);
   width: 0;
-  height: 2px;
-  background: var(--accent-blue);
+  height: var(--cta-underline);
+  background: var(--ink);
   transition: width 0.3s ease-out;
 }
 
@@ -2373,14 +2375,15 @@ body {
 .text-arrow-cta-icon {
   position: relative;
   flex-shrink: 0;
+  width: var(--cta-arrow);
+  height: var(--cta-arrow);
   color: var(--ink);
-  transition: transform 0.2s ease-out 0.15s, color 0.2s ease-out 0.15s;
+  transition: transform 0.2s ease-out 0.15s;
 }
 
 .text-arrow-cta:hover .text-arrow-cta-icon,
 .text-arrow-cta:focus-visible .text-arrow-cta-icon {
-  color: var(--accent-blue);
-  transform: translateX(4px);
+  transform: translateX(var(--cta-travel));
 }
 
 /* Back means going backward — the reverse variant's arrow sits before the
@@ -2389,14 +2392,13 @@ body {
 .text-arrow-cta--reverse .text-arrow-cta-icon:hover,
 .text-arrow-cta--reverse:hover .text-arrow-cta-icon,
 .text-arrow-cta--reverse:focus-visible .text-arrow-cta-icon {
-  transform: translateX(-4px) scaleX(-1);
+  transform: translateX(calc(var(--cta-travel) * -1)) scaleX(-1);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .work-card,
   .work-nda-tip,
   .work-cta,
-  .text-arrow-cta-label::before,
   .text-arrow-cta::after,
   .text-arrow-cta-icon {
     transition: none;
