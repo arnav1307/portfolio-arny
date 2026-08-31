@@ -485,15 +485,11 @@ export function OpeningDP() {
             className="opening-dp-dither pointer-events-none absolute inset-0 -z-10 overflow-hidden"
             style={{ opacity: 0.85 }}
           >
-            {/* Line grid, per ss13 — a bounded rectangle of cells. */}
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage:
-                  "linear-gradient(to right, color-mix(in srgb, var(--ink) 10%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--ink) 10%, transparent) 1px, transparent 1px)",
-                backgroundSize: "88px 88px",
-              }}
-            />
+            {/* Line grid, per ss13 — a bounded rectangle of cells.
+                Sizing lives in globals.css (.opening-dp-grid) because it needs
+                round(), which can't be expressed as a plain inline value with
+                an @supports fallback. See that rule for why. */}
+            <div className="opening-dp-grid absolute" />
             {/* With bulge off the field is velocity-driven, so hover raises
                 cursorForce rather than bulgeStrength. DotField reads
                 propsRef.current every frame, so this reaches the canvas without

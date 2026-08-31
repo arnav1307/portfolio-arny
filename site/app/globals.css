@@ -1824,6 +1824,57 @@ body {
   height: auto;
 }
 
+/* ── OpeningDP line grid — must terminate on a cell boundary BOTH sides ────
+   The two linear-gradients paint their 1px line at the START of each 88px
+   tile, so the LEFT edge always gets a line at x=0 while the RIGHT edge only
+   gets one when the width is an exact multiple of 88. The board is
+   min(84vw, 1320px): 1320/88 = 15 exactly, so it lands flush only once 84vw
+   >= 1320px (viewports >= ~1572px). Below that — i.e. most laptops — the last
+   column is cut mid-cell, which is why the left edge read as a deliberate
+   boundary and the right did not (Arnav 2026-08-30).
+
+   Fix: size the grid layer DOWN to a whole number of cells instead of
+   changing backgroundSize. Rescaling the cell would change the texture's
+   density, which is a different look, not a fix. The leftover (< 88px) is
+   split evenly by the inset-based centring below, so the texture stays
+   centred in the board and both edges terminate on a line.
+
+   round() is required to express "floor to the nearest 88px" against a
+   percentage that is only known at layout time. It is not universally
+   supported, so the base rule keeps the current inset-0 behaviour and the
+   @supports block upgrades it — no browser ends up worse off than today. */
+.opening-dp-grid {
+  inset: 0;
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--ink) 10%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--ink) 10%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 88px 88px;
+}
+
+@supports (width: round(down, 100%, 88px)) {
+  .opening-dp-grid {
+    /* Whole cells only, in both axes. The +1px keeps the final line itself
+       inside the box: 15 cells of 88px span 1320px, but the closing line is
+       painted at x=1320, which a 1320px-wide box would clip. */
+    inset: auto;
+    width: calc(round(down, 100%, 88px) + 1px);
+    height: calc(round(down, 100%, 88px) + 1px);
+    /* Centre the leftover (< 88px per axis) rather than dumping it all on one
+       side, so the board's margin stays visually symmetric. */
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+  }
+}
+
 .opening-dp-center {
   padding-inline: clamp(16px, 4vw, 48px);
 }
