@@ -146,9 +146,9 @@ const THINKING_CYCLE_MS = 2400;
  *
  * Haiku's first token usually lands in a few hundred milliseconds, so the status
  * was being replaced before it could be read — the phrase never even reached its
- * first cycle, and the elapsed counter never left 0s. Holding the first chunk
- * back until this elapses means the line is always legible, and the answer then
- * streams normally from wherever it has buffered to.
+ * first cycle. Holding the first chunk back until this elapses means the line is
+ * always legible, and the answer then streams normally from wherever it has
+ * buffered to.
  *
  * ⚠️ This delays the ANSWER, so it is a real cost paid for a legible state. 1.1s
  * is about the shortest that still reads as a beat rather than a flicker; going
@@ -210,38 +210,19 @@ function useMatrixSize() {
 /**
  * Only ever rendered beside Ted, never in the composer.
  *
- * Shape follows Claude Code's own spinner line (Arnav 2026-08-29): the turning
- * asterisk, the gerund, then the elapsed seconds in parentheses. The counter is
- * the part that makes it read as a real process rather than a decorative
- * "loading" badge — something is measurably happening, and the number moving is
- * the proof.
+ * The spinner and the gerund, and nothing else.
  *
- * Deliberately NOT showing a token count like the terminal does: we do not know
- * it client-side until the stream ends, and inventing one would be a fake number
- * on a page whose whole argument is that the numbers are real.
+ * ⛔ NO ELAPSED COUNTER (Arnav 2026-08-31: "remove the time because the agent
+ * does not actually take like 6 seconds, it flashes answer immediately"). The
+ * line used to end with "(6s)", copying Claude Code's own spinner. That works
+ * in a terminal where the work really does run for seconds; here Haiku's first
+ * token lands in a few hundred milliseconds and THINKING_MIN_MS holds the line
+ * up artificially, so the number was mostly measuring our own deliberate
+ * delay. A counter that reports the UI's padding rather than real work is a
+ * fake number, which is the same reason there is no token count here.
  */
-function ThinkingStatus({ phrase, startedAt }: { phrase: string; startedAt: number }) {
+function ThinkingStatus({ phrase }: { phrase: string }) {
   const { size, dot } = useMatrixSize();
-
-  /* Seeded from startedAt during RENDER, not in an effect — the seed has to be
-     right on the very first paint, and setState inside an effect body is both a
-     cascading render and an eslint error here.
-     startedAt comes from the parent rather than being captured locally, because
-     this component re-renders every time the phrase cycles; a locally captured
-     start restarted the count, which showed as the counter jumping 0s, 1s, 3s,
-     5s instead of ticking evenly. */
-  const [secs, setSecs] = useState(0);
-  useEffect(() => {
-    /* Date.now() lives in the interval callback, never in render — reading a
-       clock during render is impure (the same value would differ between two
-       renders of the same state) and eslint rejects it. The first tick lands
-       250ms in, which is invisible: the counter reads 0s for its first second
-       either way. */
-    const id = window.setInterval(() => {
-      setSecs(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
-    }, 250);
-    return () => window.clearInterval(id);
-  }, [startedAt]);
 
   return (
     <span
@@ -261,7 +242,6 @@ function ThinkingStatus({ phrase, startedAt }: { phrase: string; startedAt: numb
       <span key={phrase} className="agent-thinking-phrase">
         {phrase}
       </span>
-      <span className="agent-thinking-meta">({secs}s)</span>
     </span>
   );
 }
@@ -293,10 +273,6 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
    */
   const [outOfAnswers, setOutOfAnswers] = useState(false);
   const [thinkIdx, setThinkIdx] = useState(0);
-  /** When the current ask started. Drives the thinking line's elapsed counter,
-   *  and lives here rather than in ThinkingStatus so the phrase cycling (which
-   *  re-renders that component) cannot reset it. */
-  const [thinkStart, setThinkStart] = useState(0);
   const [thinkQueue, setThinkQueue] = useState<string[]>(() => [...THINKING_PHRASES]);
   const [asked, setAsked] = useState(0);
   /** Timestamp of this visitor's FIRST question. Drives the reset day in the cap. */
@@ -694,7 +670,6 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
       const history = [...turns, { role: "user" as const, content: text }];
       setTurns([...history, { role: "assistant", content: "" }]);
 
-      setThinkStart(Date.now());
       setThinkIdx(0);
 
       const controller = new AbortController();
@@ -1150,7 +1125,7 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
                   bubble. */}
               {turn.role === "assistant" && !turn.content ? (
                 <div>
-                  <ThinkingStatus phrase={thinkingPhrase} startedAt={thinkStart} />
+                  <ThinkingStatus phrase={thinkingPhrase} />
                 </div>
               ) : (
                 <p>{capitalizeLead(turn.content)}</p>

@@ -4253,12 +4253,14 @@ body {
    Star is an SVG (Baking reference), not the muddy ✨ emoji. */
 .agent-thinking {
   display: inline-flex;
-  /* CENTER, not baseline (Arnav 2026-08-31, screenshot). The spinner used to
-     be a `*` glyph, which shares a baseline with the word beside it; the dot
-     matrix is a square BOX, and baseline-aligning a box puts its bottom edge
-     on the text baseline, hanging the whole grid below the line. Centring
-     aligns the two by their middles, which is what reads as one row. */
-  align-items: center;
+  /* BASELINE (Arnav 2026-08-31, second pass: "the bottom row of matrix should
+     match the end of M, they should be aligned on the same line"). For a flex
+     item with no text of its own, `baseline` uses the item's BOTTOM MARGIN
+     EDGE as its baseline — which is precisely the ask: the matrix's last row
+     of dots lands on the text baseline instead of floating mid-word.
+     ⚠️ An earlier pass used `center` here, which optically centres the grid
+     against the x-height and leaves the bottom row hanging low. */
+  align-items: baseline;
   gap: 6px;
   /* Was --accent (the terracotta #b4552d), which made both the phrase and the
      dots orange in an otherwise monochrome panel. --ink follows the
@@ -4284,7 +4286,7 @@ body {
 /* ┌─ TUNE THE THINKING SPINNER HERE ───────────────────────────────────────┐
      --agent-dot-matrix   overall box   (:root, with the other agent sizes)
      --agent-dot-size     one dot       (same block)
-     --agent-dot-drop     vertical nudge, positive moves it DOWN        2px
+     --agent-dot-drop     vertical nudge, positive moves it DOWN    -0.84em
    └────────────────────────────────────────────────────────────────────────┘
 
    ⛔ BLACK, NOT --accent (Arnav 2026-08-31, screenshot). --accent is the
@@ -4293,32 +4295,27 @@ body {
    dark, so it also follows the eye-toggle. Same reasoning as the CTA accent
    removal — the agent panel has no other colour in it.
 
-   ⚠️ ALIGNMENT: the matrix is a square BOX, not a glyph, so the real fix is
-   `align-items: center` on the .agent-thinking wrapper (see that rule) —
-   baseline-aligning a box puts its bottom edge on the text baseline and hangs
-   the grid below the line, which is what the screenshot showed. With the
-   wrapper centring, measured offset between the matrix's centre and the
-   phrase's centre still sits ~2px BELOW the matrix's, because the phrase runs
-   at line-height 1.3 and that extra leading is not split evenly around the
-   glyphs — flex centring aligns the two BOXES, not the two inked shapes. So
-   the matrix is nudged down by that measured amount rather than left to look
-   like it floats. Positive moves it DOWN; re-measure if the phrase's
-   font-size or line-height ever changes. */
+   ⚠️ ALIGNMENT lives on the .agent-thinking WRAPPER, not here: it is
+   `align-items: baseline`, which for a flex item carrying no text of its own
+   resolves to that item's bottom margin edge. That is what puts the matrix's
+   last row of dots on the same line as the bottom of the phrase's letters. */
 .agent-thinking-matrix {
-  --agent-dot-drop: 2px;
+  /* ⚠️ NOT 0, and not decorative — this is what actually lands the bottom row
+     of dots on the text baseline.
+     `align-items: baseline` on the wrapper does NOT use this item's bottom
+     edge, because the matrix is itself an inline-flex box with inline content,
+     so flexbox synthesises a baseline from INSIDE it and the grid ends up
+     hanging ~10px low (measured). The wrapper's baseline still does the useful
+     half of the job — it pins the item to the text's own baseline box rather
+     than the line box — and this transform carries the remainder.
+     Expressed in em so it tracks --agent-size rather than being a fixed pixel
+     count that only happens to be right at 12px. Positive moves it DOWN. */
+  --agent-dot-drop: -0.84em;
 
   flex-shrink: 0;
   display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
   color: var(--ink);
   transform: translateY(var(--agent-dot-drop));
-}
-
-/* Elapsed seconds, quieter than the phrase — it is evidence, not the message. */
-.agent-thinking-meta {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .agent-thinking-phrase {
