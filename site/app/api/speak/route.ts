@@ -9,6 +9,7 @@ import {
   VOICE_ID,
 } from "@/lib/agent-prompt";
 import {
+  bodyTooLarge,
   checkAndRecord,
   clientIp,
   creditBack,
@@ -82,6 +83,9 @@ export async function POST(req: Request) {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!elevenKey) return err(500, "unconfigured");
 
+  // Same reasoning as /api/ask: cap the body before parsing it.
+  if (bodyTooLarge(req)) return err(413, "too_large");
+
   let body: { id?: string; token?: string; lang?: string };
   try {
     body = await req.json();
@@ -111,6 +115,8 @@ export async function POST(req: Request) {
   const ip = clientIp(req);
   const guard = checkAndRecord(ip);
   if (!guard.ok) return err(429, "rate_limited");
+  // See creditBack's doc: removes this exact stamp, not the most recent one.
+  const stamp = guard.stamp;
 
   let text = answer;
   if (text.length > SPEAK_VERBATIM_LIMIT && anthropicKey) {
@@ -144,7 +150,7 @@ export async function POST(req: Request) {
     console.error("elevenlabs error", speech.status);
     // No audio was delivered, so this shouldn't cost the visitor a slice of
     // their real quota (same reasoning as ask/route.ts's creditBack calls).
-    creditBack(ip);
+    creditBack(ip, stamp);
     return err(quotaGone ? 429 : 502, quotaGone ? "quota" : "tts_failed");
   }
 

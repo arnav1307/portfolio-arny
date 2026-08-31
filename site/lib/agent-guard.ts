@@ -32,6 +32,21 @@ const GLOBAL_PER_DAY = 300;
 /** Session tokens expire well before anyone finishes reading three answers. */
 const TOKEN_TTL_MS = 30 * 60 * 1000;
 
+/**
+ * Per-IP cap on token MINTING (2026-08-31 review).
+ *
+ * `/api/session` used to be unlimited on the reasoning that issuing a token
+ * costs nothing. True of the token itself — but each one is a valid 30-minute
+ * key to the two routes that DO spend, and minting need not be correlated with
+ * spending, so a script could stockpile thousands and pipeline them.
+ *
+ * Deliberately generous: a real visitor mints one per panel open, and a hard
+ * reload mints another. 40/hour is far past any honest usage while still
+ * capping a stockpile. This does not replace the per-answer limits below; it
+ * removes the free unlimited step in front of them.
+ */
+const SESSION_PER_HOUR = 40;
+
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
@@ -80,6 +95,11 @@ type Bucket = { hour: number[]; day: number[] };
 const ipBuckets = new Map<string, Bucket>();
 let globalDay: number[] = [];
 
+/** Separate from `ipBuckets` on purpose — minting a token and spending money
+ *  are different budgets, and sharing one bucket would let a burst of page
+ *  loads eat into a visitor's real answer quota. */
+const sessionBuckets = new Map<string, number[]>();
+
 /**
  * `x-forwarded-for` is client-settable and cannot be trusted for rate limiting
  * on its own — a request can send any value it wants there. Vercel's edge
@@ -99,7 +119,8 @@ const since = (stamps: number[], window: number, now: number) =>
   stamps.filter((t) => now - t < window);
 
 type GuardResult =
-  | { ok: true }
+  /** `stamp` is the value recorded for this hit — pass it to creditBack. */
+  | { ok: true; stamp: number }
   | { ok: false; status: 429; reason: "ip" | "global" };
 
 /**
@@ -134,7 +155,36 @@ export function checkAndRecord(ip: string): GuardResult {
     }
   }
 
-  return { ok: true };
+  return { ok: true, stamp: now };
+}
+
+/**
+ * Per-IP throttle for `/api/session`. Spends nothing, so it is separate from
+ * `checkAndRecord` and never touches the answer quota.
+ *
+ * Returns false when the caller should be refused.
+ */
+export function allowSession(ip: string): boolean {
+  const now = Date.now();
+  const stamps = since(sessionBuckets.get(ip) ?? [], HOUR, now);
+
+  if (stamps.length >= SESSION_PER_HOUR) {
+    sessionBuckets.set(ip, stamps);
+    return false;
+  }
+
+  stamps.push(now);
+  sessionBuckets.set(ip, stamps);
+
+  // Same opportunistic sweep as ipBuckets — an unbounded Map is how a
+  // long-lived instance leaks.
+  if (sessionBuckets.size > 5000) {
+    for (const [key, value] of sessionBuckets) {
+      if (since(value, HOUR, now).length === 0) sessionBuckets.delete(key);
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -145,19 +195,63 @@ export function checkAndRecord(ip: string): GuardResult {
  * the visitor's real per-IP/global quota for zero answers (Arnav 2026-08-28
  * code review finding).
  *
- * Pops the single most recent stamp from each bucket rather than filtering
- * by exact value — checkAndRecord just pushed `now` onto the end of each
- * array with nothing awaited in between, so the last element IS the hit
- * being undone. Safe to call even if the ip has no bucket (nothing to pop).
+ * ⚠️ Takes the STAMP to remove, and removes that exact value (2026-08-31
+ * review). The previous version popped the most recent entry, on the reasoning
+ * that checkAndRecord had just pushed it "with nothing awaited in between" —
+ * which is not true of either caller. /api/ask awaits the Anthropic fetch and
+ * /api/speak awaits compress() plus the ElevenLabs call between the two, so
+ * under concurrency a pop discarded a DIFFERENT request's stamp: the failing
+ * request stayed charged and an unrelated in-flight one silently got its slot
+ * back. Removing by value cannot mix the two up.
+ *
+ * Safe to call with a stamp that is already gone (a window rolled over, or a
+ * double credit) — the splice simply finds nothing.
  */
-export function creditBack(ip: string): void {
-  if (globalDay.length > 0) globalDay.pop();
+export function creditBack(ip: string, stamp: number): void {
+  const drop = (stamps: number[]) => {
+    const i = stamps.lastIndexOf(stamp);
+    if (i !== -1) stamps.splice(i, 1);
+  };
+
+  drop(globalDay);
 
   const bucket = ipBuckets.get(ip);
   if (!bucket) return;
-  bucket.hour.pop();
-  bucket.day.pop();
+  drop(bucket.hour);
+  drop(bucket.day);
 }
+
+// ── Request body size ────────────────────────────────────────────────────────
+
+/**
+ * Largest request body either spending route will read (2026-08-31 review).
+ *
+ * MAX_INPUT_CHARS and MAX_HISTORY are applied AFTER `await req.json()` has
+ * already pulled the whole body into memory, so without this a 50MB JSON body
+ * is fully parsed before any limit runs — free for the sender, memory and
+ * function-time for us.
+ *
+ * 16KB is many times the real worst case: MAX_HISTORY (12) turns at
+ * MAX_INPUT_CHARS (1000) each, plus a token and a lang field.
+ */
+export const MAX_BODY_BYTES = 16 * 1024;
+
+/**
+ * True when `content-length` declares a body larger than the cap.
+ *
+ * ⚠️ A missing or non-numeric header is NOT treated as oversized. A chunked
+ * request legitimately omits it, and refusing those would break real clients;
+ * the routes' own MAX_INPUT_CHARS/MAX_HISTORY caps still bound what is actually
+ * used. This closes the cheap declared-huge-body case, which is the one an
+ * attacker uses.
+ */
+export function bodyTooLarge(req: Request): boolean {
+  const raw = req.headers.get("content-length");
+  if (!raw) return false;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > MAX_BODY_BYTES;
+}
+
 
 // ── Answer tokens ────────────────────────────────────────────────────────────
 // /api/speak takes a signed payload, never free-form text from the browser.

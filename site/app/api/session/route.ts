@@ -1,18 +1,31 @@
 import { NextResponse } from "next/server";
-import { issueToken } from "@/lib/agent-guard";
+import { allowSession, clientIp, issueToken } from "@/lib/agent-guard";
 
 /**
  * Issues a short-lived signed session token when the widget opens.
  *
- * Deliberately trivial. It costs nothing and spends nothing, so it needs no rate
- * limit of its own. Its only job is to make /api/ask and /api/speak reachable
- * exclusively from a browser that actually loaded the site.
+ * Its only job is to make /api/ask and /api/speak reachable exclusively from a
+ * browser that actually loaded the site.
+ *
+ * ⚠️ It DOES carry a rate limit, despite spending nothing itself (2026-08-31
+ * review; the previous comment here argued the opposite). Each token is a valid
+ * 30-minute key to the two routes that do spend, and nothing forces minting and
+ * spending to happen together — so an unlimited endpoint here let a script
+ * stockpile tokens and pipeline them later. The cap is generous (40/hour/IP):
+ * a real visitor mints one per panel open, plus one per hard reload.
  */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+export async function POST(req: Request) {
+  if (!allowSession(clientIp(req))) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   try {
     return NextResponse.json(
       { token: issueToken() },

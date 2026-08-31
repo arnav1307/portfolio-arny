@@ -12,6 +12,7 @@ import {
   TOO_FAST,
 } from "@/lib/agent-prompt";
 import {
+  bodyTooLarge,
   checkAndRecord,
   clientIp,
   creditBack,
@@ -64,6 +65,10 @@ export async function POST(req: Request) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return plain("The agent isn't configured yet.", 500);
 
+  // Before req.json(), not after: MAX_INPUT_CHARS/MAX_HISTORY below only run
+  // once the whole body is already parsed into memory.
+  if (bodyTooLarge(req)) return plain("That request was too large.", 413);
+
   let body: { messages?: Msg[]; token?: string; lang?: string };
   try {
     body = await req.json();
@@ -113,6 +118,10 @@ export async function POST(req: Request) {
     return plain(TOO_FAST[lang], 429);
   }
 
+  // The exact stamp this request recorded. creditBack removes THIS value, not
+  // "the most recent" — see its doc for the concurrency bug that caused.
+  const stamp = guard.stamp;
+
   const upstream = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -147,7 +156,7 @@ export async function POST(req: Request) {
     console.error("anthropic error", upstream.status, detail);
     // Nothing was delivered, so this shouldn't have cost the visitor a slice
     // of their real quota — see creditBack's own doc for why.
-    creditBack(ip);
+    creditBack(ip, stamp);
 
     // The account is actually out of money, which is NOT the same as a blip.
     // Anthropic returns 400 invalid_request_error with "credit balance is too
@@ -215,7 +224,7 @@ export async function POST(req: Request) {
         // produced partial text before erroring did spend real tokens, so
         // that one stays charged. An empty answer means zero spend and zero
         // value to the visitor, exactly the case creditBack exists for.
-        if (!answer.trim()) creditBack(ip);
+        if (!answer.trim()) creditBack(ip, stamp);
         controller.enqueue(line({ t: " ...lost my train of thought there. Ask again?" }));
       } finally {
         controller.close();
