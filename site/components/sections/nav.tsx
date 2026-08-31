@@ -19,6 +19,67 @@ import { USE_ROUTE_PREFETCH } from "@/lib/transition-flags";
 const HIDE_SCROLL_THRESHOLD = 48;
 
 /**
+ * The home nav's four tabs, in Arnav's locked order (2026-08-27):
+ * Work → Stack → Contact → Approach.
+ *
+ * Hoisted out of JSX into data 2026-08-30 for the sliding pill: the pill
+ * measures tabs by index, so the links have to be a mappable list rather
+ * than four hand-written elements, or every ref would be wired by hand and
+ * the indices could drift out of step with the render order.
+ *
+ * `section` set → an in-page scroll (goSection). `section` null → a real
+ * route change through the curtain (goAbout). Only the routing one prefetches.
+ */
+const NAV_TABS = [
+  { label: "Work", href: "/#experience", section: "experience", Icon: WorkIcon, prefetch: false },
+  { label: "Stack", href: "/#stack", section: "stack", Icon: StackIcon, prefetch: false },
+  { label: "Contact", href: "/#desk", section: "desk", Icon: ContactIcon, prefetch: false },
+  { label: "Approach", href: "/how-i-work", section: null, Icon: ApproachIcon, prefetch: true },
+] as const;
+
+/**
+ * Slides the sliding-tab pill onto tab `idx`.
+ *
+ * The whole mechanic: read the target tab's own `offsetLeft`/`offsetWidth`
+ * and write them as inline `transform`/`width`. Both properties are
+ * transitioned in CSS (.nav-tabs-pill), so the browser tweens between the
+ * PREVIOUS measured pair and this one — no hardcoded per-tab geometry, which
+ * is what lets the same code work unchanged in the icon-only sub-900px layout
+ * where every tab is far narrower than its desktop width.
+ *
+ * `animate: false` re-snaps instantly: the transition is stripped, the new
+ * values written, a reflow forced (the `void offsetWidth` read), and the
+ * transition restored. Without that forced read the browser coalesces all
+ * three style writes into one frame and animates anyway.
+ *
+ * Module-level, not a component body function, deliberately: it touches only
+ * the two refs handed to it and no reactive value, so defining it inside the
+ * component would make it a new closure every render for no benefit — and the
+ * react-hooks/immutability rule (correctly) rejects an effect reaching for a
+ * component-scoped function declared below it.
+ */
+function movePill(
+  pill: HTMLSpanElement | null,
+  tab: HTMLAnchorElement | null,
+  animate: boolean,
+) {
+  if (!pill || !tab) return;
+  const left = tab.offsetLeft;
+  const width = tab.offsetWidth;
+  if (animate) {
+    pill.style.transform = `translateX(${left}px)`;
+    pill.style.width = `${width}px`;
+    return;
+  }
+  const prev = pill.style.transition;
+  pill.style.transition = "none";
+  pill.style.transform = `translateX(${left}px)`;
+  pill.style.width = `${width}px`;
+  void pill.offsetWidth;
+  pill.style.transition = prev;
+}
+
+/**
  * Shared site chrome (v3 "Site Chrome" template) — identical on / and /about.
  * Left: AG avatar mark + a separate thick glass pill (clock, eye-toggle,
  * section links). Link type is Satoshi bold (.nav-link).
@@ -50,6 +111,31 @@ export function Nav() {
   const [hidden, setHidden] = useState(false);
   const rafRef = useRef<number | null>(null);
   const lastYRef = useRef(0);
+
+  /**
+   * Sliding-pill state for the home nav's four links.
+   *
+   * ⚠️ WHAT "ACTIVE" MEANS HERE, and why it is not scroll position.
+   * Three of these four links are in-page scrolls (Work/Stack/Contact) and
+   * the fourth (Approach) ROUTES to /how-i-work. A scroll-spy pill — the
+   * usual choice for a one-page nav — can therefore never light Approach on
+   * the home page, because there is no #approach section to be scrolled
+   * into. A quarter of the bar would look permanently dead. So the pill
+   * follows INTENT instead of position: it slides to whatever tab is
+   * hovered or keyboard-focused, and falls back to the last tab the visitor
+   * actually clicked once the pointer leaves. That reads as a CTA affordance
+   * (what the user asked for) without claiming to report where on the page
+   * you are, which would be a lie for one of the four.
+   *
+   * `committed` = last clicked, `hovered` = current pointer/focus target.
+   * `null` in both retracts the pill entirely (see [data-armed] in CSS), so
+   * the bar at rest looks exactly as it did before this change.
+   */
+  const [committed, setCommitted] = useState<number | null>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const pillRef = useRef<HTMLSpanElement | null>(null);
+  const tabRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+  const shown = hovered ?? committed;
 
   useEffect(() => {
     // Only /how-i-work runs this listener at all — home always shows the
@@ -100,6 +186,39 @@ export function Nav() {
       else window.removeEventListener("scroll", onScroll);
     };
   }, [smoother, isAbout]);
+
+  /**
+   * Drives the pill from `shown`, and re-snaps it on resize.
+   *
+   * The resize listener is the reason this is an effect at all: tab widths
+   * are measured in px, so a viewport change (or the 900px breakpoint that
+   * collapses the labels to icon-only) silently invalidates the last
+   * measurement and would leave the pill sitting over the wrong tab. It
+   * re-measures WITHOUT animating, because a pill gliding across the bar
+   * while the window is being dragged reads as a glitch, not a transition.
+   *
+   * The first placement of a given tab is also un-animated: with the pill
+   * starting at width 0 / translateX(0), animating into place would make it
+   * grow out of the bar's left edge on the very first hover, regardless of
+   * which tab was hovered. Subsequent moves animate normally.
+   */
+  useEffect(() => {
+    if (isAbout) return;
+    if (shown === null) return;
+    const first = !pillRef.current?.style.width;
+    // rAF so the measurement happens after layout has settled — reading
+    // offsetLeft synchronously during the commit phase can catch stale
+    // geometry on the very first paint, before fonts/icons have sized.
+    const id = window.requestAnimationFrame(() =>
+      movePill(pillRef.current, tabRefs.current[shown], !first),
+    );
+    const onResize = () => movePill(pillRef.current, tabRefs.current[shown], false);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.cancelAnimationFrame(id);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [shown, isAbout]);
 
   const prefetchAbout = () => {
     if (USE_ROUTE_PREFETCH) router.prefetch("/how-i-work");
@@ -185,51 +304,66 @@ export function Nav() {
             is now the sole left-side element. */}
         <EyeToggle />
 
-        <nav className="flex items-center gap-[22px]">
-          {/* Nav order locked 2026-08-27 (Arnav): Work → Stack → Contact →
-              Approach. Work/Stack/Contact are in-page scrolls to their
-              sections; Approach routes to /how-i-work (the case-study page
-              built from lib/about-data.ts) via the curtain, same as the old
-              HOW I WORK link did. Icons are outline glyphs, not emoji — see
-              nav-link-icons.tsx for why. */}
-          <Link
-            href="/#experience"
-            onClick={goSection("experience")}
-            data-cursor="pointer"
-            className="nav-link text-ink transition-opacity hover:opacity-60"
-          >
-            <WorkIcon />
-            <span className="nav-link-text">Work</span>
-          </Link>
-          <Link
-            href="/#stack"
-            onClick={goSection("stack")}
-            data-cursor="pointer"
-            className="nav-link text-ink transition-opacity hover:opacity-60"
-          >
-            <StackIcon />
-            <span className="nav-link-text">Stack</span>
-          </Link>
-          <Link
-            href="/#desk"
-            onClick={goSection("desk")}
-            data-cursor="pointer"
-            className="nav-link text-ink transition-opacity hover:opacity-60"
-          >
-            <ContactIcon />
-            <span className="nav-link-text">Contact</span>
-          </Link>
-          <Link
-            href="/how-i-work"
-            onClick={goAbout}
-            onMouseEnter={prefetchAbout}
-            onFocus={prefetchAbout}
-            data-cursor="pointer"
-            className="nav-link text-ink transition-opacity hover:opacity-60"
-          >
-            <ApproachIcon />
-            <span className="nav-link-text">Approach</span>
-          </Link>
+        {/* Nav order locked 2026-08-27 (Arnav): Work → Stack → Contact →
+            Approach. Work/Stack/Contact are in-page scrolls to their
+            sections; Approach routes to /how-i-work (the case-study page
+            built from lib/about-data.ts) via the curtain, same as the old
+            HOW I WORK link did. Icons are outline glyphs, not emoji — see
+            nav-link-icons.tsx for why.
+
+            ⚠️ SEMANTICS — these stay plain LINKS, deliberately.
+            The transitions.dev reference this pill mechanic comes from uses
+            <button role="tab" aria-selected>, which is correct for a real
+            tab widget that swaps panels in place. These do not: three
+            navigate within the document and one loads a different route.
+            Announcing them as tabs would tell a screen-reader user there are
+            four panels here to switch between, and `aria-selected` would
+            claim one is currently shown when nothing was ever selected. So
+            there is no role="tablist"/role="tab"/aria-selected anywhere in
+            this block. The pill is decoration: it is aria-hidden, and the
+            visual "active" state rides on a plain data-attribute, which
+            assistive tech ignores. `Link` keeps its own href semantics and
+            the reduced-motion/keyboard paths for free. */}
+        <nav
+          className="nav-tabs"
+          data-armed={shown !== null}
+          onMouseLeave={() => setHovered(null)}
+        >
+          <span ref={pillRef} className="nav-tabs-pill" aria-hidden="true" />
+          {NAV_TABS.map((tab, i) => (
+            <Link
+              key={tab.label}
+              ref={(el) => {
+                tabRefs.current[i] = el;
+              }}
+              href={tab.href}
+              // Click behaviour is UNCHANGED from before the pill landed:
+              // the three section links still run goSection (Lenis scrollTo
+              // on home, curtain-navigate from elsewhere) and Approach still
+              // runs goAbout (curtain route). setCommitted is additive and
+              // runs alongside, never instead of, the original handler.
+              onClick={(e) => {
+                setCommitted(i);
+                if (tab.section) goSection(tab.section)(e);
+                else goAbout(e);
+              }}
+              onMouseEnter={() => {
+                setHovered(i);
+                if (tab.prefetch) prefetchAbout();
+              }}
+              onFocus={() => {
+                setHovered(i);
+                if (tab.prefetch) prefetchAbout();
+              }}
+              onBlur={() => setHovered(null)}
+              data-cursor="pointer"
+              data-active={shown === i}
+              className="nav-link text-ink"
+            >
+              <tab.Icon />
+              <span className="nav-link-text">{tab.label}</span>
+            </Link>
+          ))}
         </nav>
       </header>
     </div>

@@ -831,6 +831,101 @@ body {
   opacity: 0.75;
 }
 
+/* ------------------------------------------------------------
+   SLIDING TABS — the home nav's four links (nav.tsx), 2026-08-30.
+   Mechanic ported from transitions.dev's SlidingTabs: one absolutely
+   positioned pill sits BEHIND the labels, and JS writes the measured
+   offsetLeft/offsetWidth of the target tab as inline transform+width,
+   so these CSS transitions tween between two real measured positions
+   rather than guessing at them.
+
+   ⚠️ TOKENS ONLY. The reference hardcodes #202020 / #454545 / #ffffff /
+   rgba(193,193,193,.8). Every one of those would strand the pill at a
+   fixed grey when the eye-toggle flips, so all four map onto the site's
+   existing --ink/--paper pair instead:
+     bar background  → nothing. `.nav-shell` IS the bar; it already
+                       carries the glass pill's own background, so a
+                       second opaque bar inside it would double up.
+     pill fill       → a MIX of --ink into transparent. Because it is a
+                       mix rather than a literal colour, it resolves to a
+                       soft dark tint on light paper and a soft light
+                       tint on the near-black dark paper automatically —
+                       one declaration, correct in both themes.
+     muted label     → --ink at 62% (matches the hover:opacity-60 the
+                       links carried before this change).
+     active label    → --ink at full strength.
+   ------------------------------------------------------------ */
+.nav-tabs {
+  position: relative;
+  display: flex;
+  align-items: center;
+  /* Was gap:22px on the bare `nav`. The pill is measured off each tab's
+     own box, so the gap is now visual breathing room between pills. */
+  gap: 4px;
+}
+
+/* The pill. `width`/`transform` are written inline by nav.tsx from live
+   measurements — the values here are only the pre-measurement resting
+   state, which is why width starts at 0 (invisible until placed). */
+.nav-tabs-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
+  transform: translateX(0);
+  opacity: 0;
+  transition:
+    transform 250ms var(--ease-signature),
+    width 250ms var(--ease-signature),
+    opacity 180ms var(--ease-signature);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Hidden until a tab is actually hovered/focused/committed, so the nav at
+   rest is the same clean pill it was before — the tab affordance appears
+   on intent rather than sitting there permanently. */
+.nav-tabs[data-armed="true"] .nav-tabs-pill {
+  opacity: 1;
+}
+
+/* Links sit ABOVE the pill (pill is z-0) so labels stay readable over it. */
+.nav-tabs .nav-link {
+  position: relative;
+  z-index: 1;
+  /* Padding gives the pill something to be bigger than the text. Vertical
+     padding is small — .nav-shell's own 70px min-height already sets the
+     bar's thickness, this only shapes the pill around the label. */
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--ink) 62%, transparent);
+  transition: color 250ms var(--ease-signature);
+}
+
+.nav-tabs .nav-link:hover,
+.nav-tabs .nav-link:focus-visible,
+.nav-tabs .nav-link[data-active="true"] {
+  color: var(--ink);
+}
+
+.nav-tabs .nav-link:hover svg,
+.nav-tabs .nav-link:focus-visible svg,
+.nav-tabs .nav-link[data-active="true"] svg {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-tabs-pill,
+  .nav-tabs .nav-link {
+    transition: none;
+  }
+}
+
 /* ============================================================
    TYPEWRITER — contact headline (components/ui/typewriter).
    Types forward → holds → deletes backward → loops, exactly as in
@@ -2706,8 +2801,27 @@ body {
   .nav-plain-bar .type-time {
     display: none;
   }
-  .nav-shell nav {
-    gap: 14px;
+  /* ⚠️ The old `.nav-shell nav { gap: 14px }` was DELETED here 2026-08-30,
+     not just overridden. `.nav-tabs` is now the only <nav> inside
+     `.nav-shell`, so that descendant selector had no remaining purpose —
+     but it outranked `.nav-tabs` on specificity (0,1,1 vs 0,1,0) and
+     silently won, leaving the tighter gap below dead. Overriding it by
+     bumping this selector's specificity would have left the same trap for
+     the next edit. */
+  /* Icon-only below 900px (see .nav-link-text just below): the label is
+     visually hidden but STILL IN THE DOM, so each tab's box collapses to
+     roughly the icon's own width. The desktop 14px inline padding on top
+     of four of those overflowed the pill on a 402px phone — the exact bug
+     class CLAUDE.md records for `.nav-shell` (width:fit-content with no
+     wrap fallback cutting off after "Contact"). Tighter padding + a
+     tighter gap keeps four icon pills inside the bar. The pill measures
+     off offsetLeft/offsetWidth at runtime, so it follows this narrower
+     geometry with no JS change. */
+  .nav-tabs {
+    gap: 2px;
+  }
+  .nav-tabs .nav-link {
+    padding: 8px 9px;
   }
   .nav-link {
     font-size: 12px;
