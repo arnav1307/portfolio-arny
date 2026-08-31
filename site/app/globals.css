@@ -2622,6 +2622,18 @@ body {
    column it visually belongs to. */
 .about-back-cta {
   grid-column: 2;
+  /* ⚠️ Load-bearing (Arnav 2026-08-30: "on clicking the back cta there is a
+     huge line"). A grid item defaults to `justify-self: stretch`, so this CTA
+     — despite being `display: inline-flex` — was stretching to the FULL width
+     of the 1fr content column. `.text-arrow-cta::after` is the hover/focus
+     underline at `width: 100%`, so it drew across the whole column instead of
+     under the word "Back". Clicking made it obvious because :focus-visible
+     keeps the rule applied after the pointer leaves, so the line persisted
+     into the page transition.
+     `start` shrinks the box back to its content, which is what `inline-flex`
+     already implied everywhere this component is NOT a grid child (the
+     selected-work call site, which is why that one never showed the bug). */
+  justify-self: start;
 }
 
 /* Metadata rail.
