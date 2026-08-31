@@ -2321,23 +2321,29 @@ body {
    arrow SVG deliberately ships without width/height attributes so it follows
    --cta-arrow rather than needing a second edit in the .tsx.
 
-     --cta-size           label type size                16px
-     --cta-gap            space between label and arrow   8px
-     --cta-arrow          arrow box, width and height    15px
+     --cta-size           label type size                17px
+     --cta-gap            space between label and arrow   6px
+     --cta-arrow          arrow box, width and height    16px
      --cta-underline      underline thickness             2px
      --cta-underline-gap  underline distance below text   3px
-     --cta-travel         how far the arrow slides        4px
+     --cta-travel         how far the arrow slides        9px
+
+   ⚠️ The CTA is Raleway (--font-mono) at weight 300 — the SAME family as the
+   NDA badge and its tooltip in Selected Work. If the two ever look like
+   different typefaces, it is size/weight/case doing it, not the font: the
+   badge is 9.5px/400 uppercase with 0.06em tracking, the tooltip 10.5px/400
+   sentence case.
 
    Colour is deliberately NOT here: everything takes --ink so the eye-toggle
    keeps working. See text-arrow-cta.tsx for why the accent was removed.
    └────────────────────────────────────────────────────────────────────────┘ */
 .text-arrow-cta {
-  --cta-size: 16px;
-  --cta-gap: 8px;
-  --cta-arrow: 15px;
+  --cta-size: 17px;
+  --cta-gap: 6px;
+  --cta-arrow: 16px;
   --cta-underline: 2px;
   --cta-underline-gap: 3px;
-  --cta-travel: 4px;
+  --cta-travel: 9px;
 
   position: relative;
   display: inline-flex;
@@ -2345,8 +2351,8 @@ body {
   gap: var(--cta-gap);
   font-family: var(--font-mono);
   font-size: var(--cta-size);
-  /* Regular, not 600 (Arnav 2026-08-28: "too bold"). */
-  font-weight: 400;
+  /* 300 (Arnav 2026-08-31). Was 400; 600 was rejected earlier as "too bold". */
+  font-weight: 300;
   color: var(--ink);
 }
 
