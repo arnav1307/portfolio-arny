@@ -96,26 +96,6 @@ export function Desk() {
           0,
         )
         .fromTo(
-          "[data-desk-plane]",
-          {
-            autoAlpha: 0,
-            y: -90,
-            scaleX: 0.82,
-            scaleY: 2.6,
-            rotationX: -68,
-          },
-          {
-            autoAlpha: 1,
-            y: 0,
-            scaleX: 1,
-            scaleY: 1,
-            rotationX: 0,
-            duration: 1.15,
-            ease: "power3.inOut",
-          },
-          0.05,
-        )
-        .fromTo(
           "[data-desk-status]",
           { autoAlpha: 0, x: -24 },
           { autoAlpha: 1, x: 0, duration: 0.65 },
@@ -193,12 +173,6 @@ export function Desk() {
         className="desk-stage relative mx-auto w-full"
         style={{ aspectRatio: `${STAGE_W} / ${STAGE_H}`, maxWidth: STAGE_W }}
       >
-        <div
-          data-desk-plane
-          aria-hidden
-          className="desk-plane absolute"
-        />
-
         <div
           data-desk-status
           className="absolute z-[6] flex items-center gap-2.5"

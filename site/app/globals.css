@@ -461,21 +461,6 @@ body {
   perspective: 900px;
 }
 
-.desk-plane {
-  z-index: 1;
-  top: 63%;
-  right: 7%;
-  left: 7%;
-  height: 24%;
-  transform-origin: center center;
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-  border-top: 1px solid
-    color-mix(in srgb, var(--line) 65%, transparent);
-  background: color-mix(in srgb, var(--ink) 3%, transparent);
-  clip-path: polygon(4% 0, 96% 0, 100% 100%, 0 100%);
-}
-
 .desk-item-shell {
   transform-origin: center center;
   will-change: transform, opacity;

@@ -121,21 +121,25 @@ export function Nav() {
    * usual choice for a one-page nav — can therefore never light Approach on
    * the home page, because there is no #approach section to be scrolled
    * into. A quarter of the bar would look permanently dead. So the pill
-   * follows INTENT instead of position: it slides to whatever tab is
-   * hovered or keyboard-focused, and falls back to the last tab the visitor
-   * actually clicked once the pointer leaves. That reads as a CTA affordance
-   * (what the user asked for) without claiming to report where on the page
-   * you are, which would be a lie for one of the four.
+   * tracks the POINTER: it slides to whatever tab is hovered, and retracts
+   * the moment the pointer leaves the bar.
    *
-   * `committed` = last clicked, `hovered` = current pointer/focus target.
-   * `null` in both retracts the pill entirely (see [data-armed] in CSS), so
-   * the bar at rest looks exactly as it did before this change.
+   * ⛔ There is deliberately NO "last clicked" state (Arnav 2026-08-31: the
+   * pill "is selected on the approach tab even though my mouse is not
+   * there"). An earlier version kept the clicked index so the pill had
+   * somewhere to rest, which meant clicking Approach left it lit
+   * indefinitely — and Approach was the worst case, because it routes away
+   * and comes back with the link still focused. A pill that stays put after
+   * a click reads as "you are here", which is exactly the claim this nav
+   * cannot make for one of its four links. Do not reintroduce it.
+   *
+   * `null` retracts the pill entirely (see [data-armed] in CSS), so the bar
+   * at rest looks exactly as it did before the pill existed.
    */
-  const [committed, setCommitted] = useState<number | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
   const pillRef = useRef<HTMLSpanElement | null>(null);
   const tabRefs = useRef<Array<HTMLAnchorElement | null>>([]);
-  const shown = hovered ?? committed;
+  const shown = hovered;
 
   useEffect(() => {
     // Only /how-i-work runs this listener at all — home always shows the
@@ -343,7 +347,10 @@ export function Nav() {
               // runs goAbout (curtain route). setCommitted is additive and
               // runs alongside, never instead of, the original handler.
               onClick={(e) => {
-                setCommitted(i);
+                // Clicking must NOT leave the pill behind — see the note on
+                // `hovered` above. A click also focuses the link, so the
+                // pointer-leave alone would not clear it.
+                setHovered(null);
                 if (tab.section) goSection(tab.section)(e);
                 else goAbout(e);
               }}
@@ -351,7 +358,13 @@ export function Nav() {
                 setHovered(i);
                 if (tab.prefetch) prefetchAbout();
               }}
-              onFocus={() => {
+              // :focus-visible, not :focus — a MOUSE click focuses the link
+              // too, which lit the pill and left it lit after the pointer had
+              // moved away. Matching focus-visible means only keyboard
+              // tabbing arms it, which is the case that actually needs a
+              // visible target.
+              onFocus={(e) => {
+                if (!e.currentTarget.matches(":focus-visible")) return;
                 setHovered(i);
                 if (tab.prefetch) prefetchAbout();
               }}
