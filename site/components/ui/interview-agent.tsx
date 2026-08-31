@@ -13,6 +13,7 @@ import { gsap } from "gsap";
 import { CustomEase } from "gsap/CustomEase";
 import { lenisRef } from "@/components/motion/smooth-provider";
 import { TedOrb, type TedOrbState } from "@/components/ui/ted-orb";
+import { DotmSquare5 } from "@/components/vendor/dotmatrix/dotm-square-5";
 import { usePageTransition } from "@/components/motion/page-transition";
 import {
   CAP_CTA,
@@ -167,22 +168,43 @@ function shuffleThinking(): string[] {
 }
 
 /**
- * The spinning asterisk, a real `*` in the mono face rather than an SVG.
+ * Default box for the dot-matrix spinner, mirroring what globals.css declares.
  *
- * Modelled on Claude Code's own spinner line (Arnav supplied screenshots,
- * 2026-08-29). The earlier version was a 13px four-point SVG star, which had to
- * be optically centred against the text and read as a sticker sitting on top of
- * the transcript. A glyph shares the baseline and metrics of the word beside it,
- * so the whole status line behaves like one piece of text.
- *
- * aria-hidden because the accessible status is on the wrapper's aria-label.
+ * The spinner was a `*` glyph until 2026-08-30 (Arnav: the animation "looks too
+ * plastic", replaced with the dot matrix from inspiration/changes.md). The glyph
+ * was chosen originally because it shares the baseline and metrics of the word
+ * beside it, where an earlier SVG star read as a sticker on top of the
+ * transcript — so the matrix is deliberately kept SMALL and baseline-aligned
+ * (.agent-thinking-matrix) rather than sized to the reference's 32px, which is
+ * roughly double the text and would reintroduce exactly that problem.
  */
-function ThinkingStar() {
-  return (
-    <span className="agent-thinking-star" aria-hidden>
-      *
-    </span>
-  );
+const MATRIX_FALLBACK = { size: 15, dot: 2 } as const;
+
+/**
+ * Reads the matrix's box off the `.agent-*` tuning block in globals.css, so it
+ * retunes in the same place as every other agent measurement rather than here.
+ *
+ * ⚠️ `DotmSquare5` takes NUMBERS, not CSS lengths, so the custom properties
+ * have to be resolved in JS. Lazy initializer, NOT an effect: this is a
+ * synchronous one-shot read, and setState in an effect body is both a
+ * cascading render and an eslint error in this repo. The SSR branch returns
+ * the same values the stylesheet declares, so the first client render matches
+ * the server.
+ */
+function useMatrixSize() {
+  const [box] = useState(() => {
+    if (typeof window === "undefined") return MATRIX_FALLBACK;
+    const css = getComputedStyle(document.documentElement);
+    const read = (name: string, fallback: number) => {
+      const n = Number.parseFloat(css.getPropertyValue(name));
+      return Number.isFinite(n) && n > 0 ? n : fallback;
+    };
+    return {
+      size: read("--agent-dot-matrix", MATRIX_FALLBACK.size),
+      dot: read("--agent-dot-size", MATRIX_FALLBACK.dot),
+    };
+  });
+  return box;
 }
 
 /**
@@ -199,6 +221,8 @@ function ThinkingStar() {
  * on a page whose whole argument is that the numbers are real.
  */
 function ThinkingStatus({ phrase, startedAt }: { phrase: string; startedAt: number }) {
+  const { size, dot } = useMatrixSize();
+
   /* Seeded from startedAt during RENDER, not in an effect — the seed has to be
      right on the very first paint, and setState inside an effect body is both a
      cascading render and an eslint error here.
@@ -225,7 +249,15 @@ function ThinkingStatus({ phrase, startedAt }: { phrase: string; startedAt: numb
       aria-live="polite"
       aria-label="thinking"
     >
-      <ThinkingStar />
+      <DotmSquare5
+        className="agent-thinking-matrix"
+        size={size}
+        dotSize={dot}
+        speed={1.4}
+        opacityBase={0.1}
+        opacityMid={0.4}
+        opacityPeak={0.95}
+      />
       <span key={phrase} className="agent-thinking-phrase">
         {phrase}
       </span>
@@ -1107,12 +1139,22 @@ export function InterviewAgent({ onLanguageChange }: InterviewAgentProps = {}) {
 
           {turns.map((turn, i) => (
             <div key={i} className="agent-turn" data-role={turn.role}>
-              <p>
-                {capitalizeLead(turn.content)}
-                {turn.role === "assistant" && !turn.content && (
+              {/* A <div>, not a <p>, ONLY while the thinking line is showing.
+                  The dot-matrix spinner renders <div>s internally (it is
+                  vendored verbatim from the registry and deliberately not
+                  patched), and a <div> inside a <p> is invalid HTML — the
+                  browser closes the paragraph early, which React reports as a
+                  hydration error. The finished answer stays a <p>, so the
+                  bubble's own styles are unchanged for every other state;
+                  globals.css matches both element names for the assistant
+                  bubble. */}
+              {turn.role === "assistant" && !turn.content ? (
+                <div>
                   <ThinkingStatus phrase={thinkingPhrase} startedAt={thinkStart} />
-                )}
-              </p>
+                </div>
+              ) : (
+                <p>{capitalizeLead(turn.content)}</p>
+              )}
 
               {/* Ted rides beside every assistant turn:
                   thinking → coding face

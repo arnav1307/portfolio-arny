@@ -3599,6 +3599,18 @@ body {
   --agent-line: 1.62;
   --agent-weight: 400;
   --agent-weight-ui: 500;
+
+  /* Thinking spinner (the dot matrix). Tuned here rather than in the component
+     so it lives with the rest of the agent's measurements.
+       --agent-dot-matrix   overall box   15px  (was a ~15px `*` glyph)
+       --agent-dot-size     one dot        2px
+     ⚠️ interview-agent.tsx reads BOTH of these with getComputedStyle and passes
+     them as numbers, because DotmSquare5 takes numbers rather than CSS lengths.
+     Keep them in px — a unitless or em value will parse to the wrong number.
+     The reference used 32px, which is roughly double the text beside it and
+     read as a sticker rather than part of the line. */
+  --agent-dot-matrix: 15px;
+  --agent-dot-size: 2px;
 }
 
 .agent-scroll {
@@ -3725,7 +3737,8 @@ body {
    (copy left, Ted right) but supplies its own single bubble. Without this, every
    <p> inside the cap got the bubble's border and background and the three lines
    rendered as three stacked bubbles (Arnav 2026-08-29). */
-.agent-turn[data-role="assistant"]:not(.agent-turn--cap) p {
+.agent-turn[data-role="assistant"]:not(.agent-turn--cap) p,
+.agent-turn[data-role="assistant"]:not(.agent-turn--cap) > div:not([class]) {
   flex: 1;
   min-width: 0;
   padding: 9px 13px;
@@ -4131,29 +4144,27 @@ body {
      a status line should sit flat in it. */
 }
 
-/* The asterisk. A real glyph in the mono face rather than an SVG star, so it
-   shares the baseline and metrics of the word beside it — the SVG was a 13px
-   box being optically centred against text, which is what made it read big. */
-.agent-thinking-star {
+/* The dot matrix (replaced the spinning `*` 2026-08-30 — Arnav: the old one
+   "looks too plastic"). Sized from --agent-dot-matrix above.
+
+   The glyph it replaced was chosen because it shared the baseline and metrics
+   of the word beside it, where an earlier SVG star read as a sticker sitting on
+   the transcript. So this keeps that property deliberately: inline-flex plus a
+   small negative margin-bottom drops the box onto the text baseline instead of
+   letting it sit on the line box's bottom edge, which would push the phrase up
+   and reintroduce the sticker look. */
+.agent-thinking-matrix {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
   color: var(--accent);
-  /* Slow, so it reads as "working" rather than "loading". The terminal
-     reference turns; it does not throb. */
-  animation: agent-star-spin 3.2s linear infinite;
-  display: inline-block;
-  /* Rotation needs a box; inline glyphs do not transform reliably. */
-  transform-origin: 50% 55%;
+  margin-bottom: -2px;
 }
 
 /* Elapsed seconds, quieter than the phrase — it is evidence, not the message. */
 .agent-thinking-meta {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
-}
-
-@keyframes agent-star-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 .agent-thinking-phrase {
@@ -4257,7 +4268,7 @@ body {
   .agent-trigger-glow,
   .agent-live,
   .agent-thinking-phrase,
-  .agent-thinking-star,
+  .agent-thinking-matrix,
   .agent-turn,
   .agent-orb,
   .agent-cap,
