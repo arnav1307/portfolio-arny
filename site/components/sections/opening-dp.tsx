@@ -148,7 +148,45 @@ const GRID_ITEMS: GridItem[] = [
   { file: "img-12.png", left: 1050, bottom: 300, w: 174, h: 172, side: "right", slot: 0.76, tilt: -8 },
   { file: "img-05.png", left: 850, bottom: 220, w: 151, h: 151, side: "right", slot: 0.88, tilt: 6 },
   { file: "img-01.png", left: 1270, bottom: 120, w: 170, h: 170, side: "right", slot: 0.93, tilt: -5 },
+
+  /**
+   * batman.svg — the 17th object (Arnav 2026-08-30). Not from the DP Framer
+   * board, so it has no provenance position; the slot below was chosen
+   * arithmetically, not by eye.
+   *
+   * POSITION: bottom-left is the board's one genuinely empty quadrant. With
+   * every item's rendered box computed in artboard units (w*SIZE_SCALE by
+   * h*SIZE_SCALE, `bottom` converted to a top edge), this rect is
+   * x[20,164.5] y[937.5,1082] and its nearest neighbour is img-07 at 145.5px
+   * clear — the largest clearance available anywhere on the board at this
+   * size. It also misses all four caption plates (nearest, cap-midR, 284.5px).
+   *
+   * SLOT 0.64 is unused on the left side (0.03/0.14/0.22/0.4/0.55/0.71/0.8/
+   * 0.86), so the clean-state edge column stays evenly spread.
+   *
+   * Mobile needs no special handling: the whole board scales via
+   * --dp-item-scale rather than filtering the item list, so this entry
+   * follows the other sixteen down automatically.
+   */
+  { file: "batman.svg", left: 20, bottom: 20, w: 170, h: 170, side: "left", slot: 0.64, tilt: -4 },
 ];
+
+/**
+ * batman.svg is a FLAT `fill="#dddbd1"` silhouette — a near-white grey that is
+ * effectively invisible on the light `--paper` stage, and would be a pale blob
+ * in dark mode. Exactly the lc1.png nav-charm failure documented in CLAUDE.md.
+ *
+ * A raw `<Image src>` cannot be themed (an <img> can't inherit currentColor,
+ * and a hue-rotate/invert filter chain is not a token), so this reuses the
+ * approach ALREADY proven on this same component's mode-toggle icons
+ * (`.opening-dp-mode-icon` in globals.css): the SVG is used as a CSS MASK and
+ * the visible colour comes from `background-color: var(--ink)`. The bat-oval
+ * path is itself the silhouette, so masking reproduces the artwork exactly
+ * while the colour follows the eye-toggle in both directions — --ink is
+ * #01060d on paper and #f0f5fe in dark, so contrast is maximal either way.
+ * Tokens only, no hardcoded hex, and nothing to swap on theme change.
+ */
+const MASKED_ITEMS = new Set(["batman.svg"]);
 
 /** DP's four text slots, wording VERBATIM (Arnav confirmed 2026-08-02). */
 const DP_TEXT = {
@@ -504,6 +542,18 @@ export function OpeningDP() {
                 >
                   {item.file === "img-06-folder.png" ? (
                     <FolderWithTools />
+                  ) : MASKED_ITEMS.has(item.file) ? (
+                    /* Mask, not <Image> — see MASKED_ITEMS above. The colour
+                       is var(--ink) via the shared .dp-item-masked rule in
+                       globals.css, so it flips with the eye-toggle. */
+                    <span
+                      aria-hidden="true"
+                      className="dp-item-masked absolute inset-0"
+                      style={{
+                        WebkitMaskImage: `url(/assets/opening-dp/${item.file})`,
+                        maskImage: `url(/assets/opening-dp/${item.file})`,
+                      }}
+                    />
                   ) : (
                     <Image
                       src={`/assets/opening-dp/${item.file}?v=5`}

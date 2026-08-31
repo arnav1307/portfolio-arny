@@ -1854,6 +1854,22 @@ body {
   background-color: var(--ink);
 }
 
+/* ── Board objects whose source art is a flat, near-white fill (batman.svg,
+   fill="#dddbd1") — invisible on --paper and a pale blob in dark mode, the
+   same failure as the lc1.png nav charm. Same fix as .opening-dp-mode-icon
+   above: the SVG is a MASK and the colour is a token, so the eye-toggle flips
+   it in both directions. An <img>/next Image cannot do this — it can't inherit
+   currentColor. ── */
+.dp-item-masked {
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: var(--ink);
+}
+
 /* Tooltip pill — same visual language as the Selected Work NDA tooltip
    (.work-nda-tip): dark ink pill, paper text, mono, appears above the
    button on hover/focus. Static position (centred above the button) since
