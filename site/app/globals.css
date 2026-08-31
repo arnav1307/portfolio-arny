@@ -816,10 +816,10 @@ body {
    than sharpen.
    └────────────────────────────────────────────────────────────────────────┘ */
 .nav-link {
-  --nav-link-size: 14px;
+  --nav-link-size: 15px;
   --nav-link-weight: 500;
   --nav-link-rest: 78%;
-  --nav-link-icon: 0.85;
+  --nav-link-icon: 0.95;
 
   display: inline-flex;
   align-items: center;
@@ -1344,7 +1344,7 @@ body {
   justify-content: space-between;
   gap: 24px;
   width: 100%;
-  min-height: 360px;
+  min-height: 300px;
   padding: clamp(56px, 8vh, 88px) 36px clamp(40px, 5vh, 56px);
   border-radius: 40px 40px 0 0;
   background: var(--footer-bg);
@@ -1358,10 +1358,17 @@ body {
     box-shadow var(--dur-reveal) var(--ease-signature),
     min-height 0.3s;
 }
-@media (max-width: 1024px) { .footer-band { min-height: 330px; } }
-@media (max-width: 900px)  { .footer-band { min-height: 300px; } }
-@media (max-width: 720px)  { .footer-band { min-height: 270px; } }
-@media (max-width: 480px)  { .footer-band { min-height: 240px; } }
+/* Height shrinks here WITHOUT touching SIZE_SCALE in footer-gravity.tsx —
+   restY/wall positions there derive from the live container height, not a
+   fixed number, so a shorter stage just gives stickers less room to
+   spread before stacking. That's normal physics, not clipping. Confirmed
+   architecturally before this change: only cut height here, size stayed
+   untouched. If this still clips, the bug is elsewhere (report it, don't
+   re-guess a size cut). */
+@media (max-width: 1024px) { .footer-band { min-height: 280px; } }
+@media (max-width: 900px)  { .footer-band { min-height: 260px; } }
+@media (max-width: 720px)  { .footer-band { min-height: 230px; } }
+@media (max-width: 480px)  { .footer-band { min-height: 210px; } }
 
 /* The physics stage — absolute layer filling the band, sitting behind the
    name/nav-sub row (that row needs z-index:1 to stay clickable/readable
@@ -4246,9 +4253,17 @@ body {
    Star is an SVG (Baking reference), not the muddy ✨ emoji. */
 .agent-thinking {
   display: inline-flex;
-  align-items: baseline;
+  /* CENTER, not baseline (Arnav 2026-08-31, screenshot). The spinner used to
+     be a `*` glyph, which shares a baseline with the word beside it; the dot
+     matrix is a square BOX, and baseline-aligning a box puts its bottom edge
+     on the text baseline, hanging the whole grid below the line. Centring
+     aligns the two by their middles, which is what reads as one row. */
+  align-items: center;
   gap: 6px;
-  color: var(--accent);
+  /* Was --accent (the terracotta #b4552d), which made both the phrase and the
+     dots orange in an otherwise monochrome panel. --ink follows the
+     eye-toggle. Arnav 2026-08-31: "I want it to be black and not orange". */
+  color: var(--ink);
   /* MONO, not display (Arnav 2026-08-29, referencing Claude Code's own spinner
      line). The whole point of this state is that it reads as a machine working,
      which is what the terminal-style face says and a soft UI sticker does not. */
@@ -4266,19 +4281,38 @@ body {
 
 /* The dot matrix (replaced the spinning `*` 2026-08-30 — Arnav: the old one
    "looks too plastic"). Sized from --agent-dot-matrix above.
+/* ┌─ TUNE THE THINKING SPINNER HERE ───────────────────────────────────────┐
+     --agent-dot-matrix   overall box   (:root, with the other agent sizes)
+     --agent-dot-size     one dot       (same block)
+     --agent-dot-drop     vertical nudge, positive moves it DOWN        2px
+   └────────────────────────────────────────────────────────────────────────┘
 
-   The glyph it replaced was chosen because it shared the baseline and metrics
-   of the word beside it, where an earlier SVG star read as a sticker sitting on
-   the transcript. So this keeps that property deliberately: inline-flex plus a
-   small negative margin-bottom drops the box onto the text baseline instead of
-   letting it sit on the line box's bottom edge, which would push the phrase up
-   and reintroduce the sticker look. */
+   ⛔ BLACK, NOT --accent (Arnav 2026-08-31, screenshot). --accent is the
+   terracotta #b4552d, which rendered the dots orange against an otherwise
+   monochrome status line. --ink is near-black on paper and near-white in
+   dark, so it also follows the eye-toggle. Same reasoning as the CTA accent
+   removal — the agent panel has no other colour in it.
+
+   ⚠️ ALIGNMENT: the matrix is a square BOX, not a glyph, so the real fix is
+   `align-items: center` on the .agent-thinking wrapper (see that rule) —
+   baseline-aligning a box puts its bottom edge on the text baseline and hangs
+   the grid below the line, which is what the screenshot showed. With the
+   wrapper centring, measured offset between the matrix's centre and the
+   phrase's centre still sits ~2px BELOW the matrix's, because the phrase runs
+   at line-height 1.3 and that extra leading is not split evenly around the
+   glyphs — flex centring aligns the two BOXES, not the two inked shapes. So
+   the matrix is nudged down by that measured amount rather than left to look
+   like it floats. Positive moves it DOWN; re-measure if the phrase's
+   font-size or line-height ever changes. */
 .agent-thinking-matrix {
+  --agent-dot-drop: 2px;
+
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  color: var(--accent);
-  margin-bottom: -2px;
+  vertical-align: middle;
+  color: var(--ink);
+  transform: translateY(var(--agent-dot-drop));
 }
 
 /* Elapsed seconds, quieter than the phrase — it is evidence, not the message. */
