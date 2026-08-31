@@ -57,6 +57,11 @@
      (#b4552d), which rendered the sparkles red. The icons8 source was #0091ff;
      this is that blue pulled toward the site's own --blue so it doesn't shout. */
   --sparkle: #2b8ae8;
+  /* Footer gravity stage — bloub character's own fill (matches the source
+     SVGs in public/assets/footers/) and the shape-badge accent. Own token,
+     not --accent (terracotta) or --sparkle (a different blue already tied
+     to Ted), so the footer stage can be retuned without touching either. */
+  --bloub-blue: #3b93f0;
 
   /* /how-i-work insight-card icon chips (2026-08-29). Four tints so the cards
      read as four different things rather than one repeated block; the glyph
@@ -134,6 +139,9 @@
      and gold both go muddy against it. */
   --sparkle: #5fb0ff;
   --halo: #ffd84d;
+  /* Bloub's own fill stays legible on near-black as-is — no separate dark
+     value needed, same as the light-mode one. */
+  --bloub-blue: #3b93f0;
   /* Card chips, dark — LIGHT tints, not deep ones (Arnav 2026-08-29: the dark
      versions "look weird", asked for white or near-white tones).
      The first attempt mirrored the light mode by darkening each hue, which put
@@ -794,16 +802,34 @@ body {
 /* Nav links — Satoshi BOLD, not the mono .type-label (spec §4, 2026-07-30).
    Kept uppercase with a touch of tracking so the switch reads as a weight
    change rather than a different label. */
+/* ┌─ TUNE THE NAV LINKS HERE ──────────────────────────────────────────────┐
+     --nav-link-size    label type size                       14px
+     --nav-link-weight  label weight                           500
+     --nav-link-rest    ink % at rest (hover always goes 100)   78%
+     --nav-link-icon    icon opacity at rest                   0.85
+   Raised from 13px / 62% / 0.75 (Arnav 2026-08-31: the nav "looks tiny",
+   "too grey", not matching the rest of the page). Three separate dimmings
+   were stacking — small type, a 62% ink mix, AND a 0.75 icon opacity on top
+   of that — so the bar read as disabled next to a 17px CTA and the hero's
+   full-strength type. Size and both opacities move together; the weight
+   stays 500 deliberately, since going heavier makes the bar shout rather
+   than sharpen.
+   └────────────────────────────────────────────────────────────────────────┘ */
 .nav-link {
+  --nav-link-size: 14px;
+  --nav-link-weight: 500;
+  --nav-link-rest: 78%;
+  --nav-link-icon: 0.85;
+
   display: inline-flex;
   align-items: center;
   /* Icon + label (nav-link-icons.tsx), ss12 reference 2026-08-27. */
   gap: 6px;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: var(--nav-link-size);
   /* Thinned from 700 → 500 (Arnav 2026-07-30). Satoshi's Medium still reads as
      a clear step up from the mono label it replaced, without the heft. */
-  font-weight: 500;
+  font-weight: var(--nav-link-weight);
   /* text-transform: uppercase REMOVED 2026-08-27 (Arnav: "WORK should Work,
      not all caps, same for others"). The link labels in nav.tsx are now
      written in the actual case to render (Work/Stack/Contact/Approach) —
@@ -813,7 +839,7 @@ body {
 
 .nav-link svg {
   flex: none;
-  opacity: 0.75;
+  opacity: var(--nav-link-icon);
 }
 
 /* ------------------------------------------------------------
@@ -888,7 +914,7 @@ body {
      bar's thickness, this only shapes the pill around the label. */
   padding: 8px 14px;
   border-radius: 999px;
-  color: color-mix(in srgb, var(--ink) 62%, transparent);
+  color: color-mix(in srgb, var(--ink) var(--nav-link-rest), transparent);
   transition: color 250ms var(--ease-signature);
 }
 
@@ -1296,13 +1322,29 @@ body {
 }
 
 /* Closing band — brand mark left, mono footnotes right. Same copy as before;
-   craft only (2026-08-10). Padding mirrors nav horizontally. */
+   craft only (2026-08-10). Padding mirrors nav horizontally.
+   position:relative + overflow:hidden added for the gravity physics stage
+   (footer-gravity.tsx) — it fills the band as an absolute layer behind the
+   name/nav-sub row, and overflow:hidden is what keeps dragged/settling
+   stickers clipped to the band instead of spilling into the page below.
+   min-height replaces the old content-driven height so the band has real
+   floor space for stickers to fall and rest on, not just enough for the
+   text row. */
 .footer-band {
+  position: relative;
+  overflow: hidden;
   display: flex;
-  align-items: flex-end;
+  /* Was flex-end: fine at the old content-driven height, but once
+     min-height grew the band for the gravity stage, bottom-anchoring put
+     "Arnav." well below where it used to read — looked "pushed down"
+     even though nothing was overlapping it. Anchoring to the top keeps
+     the name row where it always was, with the stage's floor space
+     opening up below it instead. */
+  align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
   width: 100%;
+  min-height: 360px;
   padding: clamp(56px, 8vh, 88px) 36px clamp(40px, 5vh, 56px);
   border-radius: 40px 40px 0 0;
   background: var(--footer-bg);
@@ -1313,12 +1355,93 @@ body {
   transition:
     background-color var(--dur-reveal) var(--ease-signature),
     color var(--dur-reveal) var(--ease-signature),
-    box-shadow var(--dur-reveal) var(--ease-signature);
+    box-shadow var(--dur-reveal) var(--ease-signature),
+    min-height 0.3s;
+}
+@media (max-width: 1024px) { .footer-band { min-height: 330px; } }
+@media (max-width: 900px)  { .footer-band { min-height: 300px; } }
+@media (max-width: 720px)  { .footer-band { min-height: 270px; } }
+@media (max-width: 480px)  { .footer-band { min-height: 240px; } }
+
+/* The physics stage — absolute layer filling the band, sitting behind the
+   name/nav-sub row (that row needs z-index:1 to stay clickable/readable
+   above it; see .footer-name-stack / .footer-right below). */
+.gravity-object-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  z-index: 0;
+}
+.gravity-object-container canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+.gravity-object {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: grab;
+  pointer-events: auto;
+  -webkit-user-drag: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  opacity: 0;
+}
+.gravity-object:active {
+  cursor: grabbing;
+}
+.gravity-object svg,
+.gravity-object img {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  display: block;
+}
+
+/* Text-in-shape badges — filled pill / outlined blob / outlined rect,
+   matching the reference screenshot. Text lives inside the shape. */
+.gravity-badge {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gravity-badge-pill {
+  font-style: italic;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: var(--bloub-blue);
+  color: #fff;
+}
+.gravity-badge-blob {
+  line-height: 1.15;
+  border-radius: 46% 54% 51% 49% / 53% 47% 53% 47%;
+  border: 4px solid var(--bloub-blue);
+  color: var(--bloub-blue);
+  background: transparent;
+}
+.gravity-badge-rect {
+  letter-spacing: 0.02em;
+  border-radius: 16px;
+  border: 3px solid var(--footer-fg);
+  color: var(--footer-fg);
+  background: transparent;
 }
 
 /* Left side: "Arnav." + "2026 ©" stacked underneath (Arnav 2026-08-27,
-   moved from the opening's vertical rail — see section-rails.tsx). */
+   moved from the opening's vertical rail — see section-rails.tsx).
+   z-index:1 keeps it above .gravity-object-container (z-index:0). */
 .footer-name-stack {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1333,6 +1456,7 @@ body {
    position — Arnav is positioning the charm itself by hand from here. */
 .footer-right {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -2884,7 +3008,10 @@ body {
     padding: 8px 9px;
   }
   .nav-link {
-    font-size: 12px;
+    /* Through the variable, not a bare font-size — the desktop rule reads
+       --nav-link-size, so a hardcoded value here would be overridden by it
+       on any browser that resolves the custom property later. */
+    --nav-link-size: 13px;
     letter-spacing: 0.02em;
   }
   /* Icon-only below this width — 4 full labels plus the avatar/toggle never
