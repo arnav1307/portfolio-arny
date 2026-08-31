@@ -102,6 +102,10 @@ type GridItem = {
    * gets an explicit vertical slot instead of a derived offset.
    */
   slot: number;
+  /** Optional horizontal nudge for clean-state positioning. Useful when one
+     object is meant to sit beside a larger neighbour rather than simply on the
+     same edge as the rest of that side's cluster. */
+  cleanXOffset?: number;
   /** Clean-state rotation in degrees. ss12's objects all sit slightly askew. */
   tilt: number;
   /**
@@ -130,9 +134,9 @@ const SIZE_SCALE = 0.85;
  * down the right, spread top-to-bottom, each rotated a few degrees and half
  * clipped by the edge.
  */
-const GRID_ITEMS: GridItem[] = [
-  { file: "img-15.png", left: 288, top: 114, w: 152, h: 151, side: "left", slot: 0.03, tilt: -8 },
-  { file: "img-09.png", left: 130, top: 290, w: 144, h: 144, side: "left", slot: 0.22, tilt: 6 },
+const gridItems: GridItem[] = [
+  { file: "img-15.png", left: 288, top: 60, w: 152, h: 151, side: "left", slot: 0.03, tilt: -8 },
+  { file: "img-09.png", left: 440, top: 920, w: 144, h: 144, side: "left", slot: 0.22, tilt: 6 },
   { file: "img-03.png", left: 383, top: 285, w: 195, h: 195, side: "left", slot: 0.4, tilt: -5 },
   { file: "img-11.png", left: 160, bottom: 318, w: 283, h: 283, side: "left", slot: 0.55, tilt: 7, priority: true },
   { file: "img-07.png", left: 310, bottom: 122, w: 171, h: 171, side: "left", slot: 0.71, tilt: -9 },
@@ -149,27 +153,11 @@ const GRID_ITEMS: GridItem[] = [
   { file: "img-05.png", left: 850, bottom: 220, w: 151, h: 151, side: "right", slot: 0.88, tilt: 6 },
   { file: "img-01.png", left: 1270, bottom: 120, w: 170, h: 170, side: "right", slot: 0.93, tilt: -5 },
 
-  /**
-   * batman.svg — the 17th object (Arnav 2026-08-30). Not from the DP Framer
-   * board, so it has no provenance position; the slot below was chosen
-   * arithmetically, not by eye.
-   *
-   * POSITION: bottom-left is the board's one genuinely empty quadrant. With
-   * every item's rendered box computed in artboard units (w*SIZE_SCALE by
-   * h*SIZE_SCALE, `bottom` converted to a top edge), this rect is
-   * x[20,164.5] y[937.5,1082] and its nearest neighbour is img-07 at 145.5px
-   * clear — the largest clearance available anywhere on the board at this
-   * size. It also misses all four caption plates (nearest, cap-midR, 284.5px).
-   *
-   * SLOT 0.64 is unused on the left side (0.03/0.14/0.22/0.4/0.55/0.71/0.8/
-   * 0.86), so the clean-state edge column stays evenly spread.
-   *
-   * Mobile needs no special handling: the whole board scales via
-   * --dp-item-scale rather than filtering the item list, so this entry
-   * follows the other sixteen down automatically.
-   */
-  { file: "batman.svg", left: 20, bottom: 20, w: 170, h: 170, side: "left", slot: 0.64, tilt: -4 },
+  
+  { file: "batman.svg", left: 210, bottom: 670, w: 170, h: 170, side: "left", slot: 0.65, tilt: -4, cleanXOffset: -50 },
 ];
+
+const GRID_ITEMS = gridItems;
 
 /**
  * batman.svg is a FLAT `fill="#dddbd1"` silhouette — a near-white grey that is
@@ -238,7 +226,10 @@ function cleanTarget(el: HTMLElement, item: GridItem, stage: DOMRect) {
   const restCentreX = r.left + r.width / 2 - stage.left;
   const restCentreY = r.top + r.height / 2 - stage.top;
   const inset = r.width * EDGE_VISIBLE_FRACTION;
-  const edgeX = item.side === "left" ? inset : stage.width - inset;
+  const edgeX =
+    item.side === "left"
+      ? inset + (item.cleanXOffset ?? 0)
+      : stage.width - inset + (item.cleanXOffset ?? 0);
   // Keep the object fully on-stage vertically even at the extreme slots.
   const targetY = item.slot * (stage.height - r.height) + r.height / 2;
   return {

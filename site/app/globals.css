@@ -57,6 +57,12 @@
      (#b4552d), which rendered the sparkles red. The icons8 source was #0091ff;
      this is that blue pulled toward the site's own --blue so it doesn't shout. */
   --sparkle: #2b8ae8;
+  /* "WANT" local-time widget separator ("_" between day/date/time/location).
+     Matches the Framer project's own configured separatorColor on the WANT
+     instance (rgb(114, 209, 219)) — Arnav's own pick there, not a guess.
+     Own token so it isn't tied to --sparkle or --bloub-blue, which are
+     already spoken for elsewhere. */
+  --scrabble-blue: rgb(114, 209, 219);
   /* Footer gravity stage — bloub character's own fill (matches the source
      SVGs in public/assets/footers/) and the shape-badge accent. Own token,
      not --accent (terracotta) or --sparkle (a different blue already tied
@@ -142,6 +148,9 @@
   /* Bloub's own fill stays legible on near-black as-is — no separate dark
      value needed, same as the light-mode one. */
   --bloub-blue: #3b93f0;
+  /* Same reasoning: rgb(114, 209, 219) is bright enough to stay legible on
+     near-black without its own dark-mode value. */
+  --scrabble-blue: rgb(114, 209, 219);
   /* Card chips, dark — LIGHT tints, not deep ones (Arnav 2026-08-29: the dark
      versions "look weird", asked for white or near-white tones).
      The first attempt mirrored the light mode by darkening each hue, which put
@@ -435,6 +444,72 @@ body {
     font-weight: 400;
     font-size: 13px;
   }
+}
+
+/* "WANT" — day/date/time/location readout, middle of the home page.
+   Ported from Framer's own "Current Local Time" component; see
+   local-time-widget.tsx for the full extraction notes. Font corrected to
+   match the real Framer instance's own control exactly (Arnav: "Open
+   Sauce 1 is what I used in the framer project") — its
+   $control__font is {fontSelector: "Open Sauce One/SemiBold",
+   fontSize: 24px, letterSpacing: -0.01em, lineHeight: 1em}. An earlier
+   version used --font-mono here instead, which was wrong — Open Sauce
+   One is already self-hosted as --font-display, so this now takes that
+   token directly rather than approximating it. The self-hosted set has
+   no SemiBold(600) file (fonts.ts ships 400/500/700/800/900) — 700
+   (Bold) is the nearest available weight, closer to SemiBold's heft
+   than 500 (Medium). */
+.local-time-widget {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  /* Real component's own $control__gap default is 4px, applied flat
+     between every child including the separator spans — the earlier
+     8px here read looser than the actual Framer render, which is
+     "Mon_31/08/2026..." (visually tight, confirmed against a real
+     screenshot of the live WANT node, not guessed). */
+  gap: 4px;
+  font-family: var(--font-display);
+  /* Medium (Arnav 2026-08-31: "instead of semi bold, make it to medium").
+     500 is a real weight in the self-hosted set (fonts.ts), unlike the
+     600/SemiBold the Framer source control specifies. */
+  font-weight: 500;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+  line-height: 1em;
+  color: var(--ink);
+}
+.local-time-sep {
+  color: var(--scrabble-blue);
+}
+@media (max-width: 480px) {
+  .local-time-widget {
+    font-size: 16px;
+    gap: 4px;
+  }
+}
+
+/* WANT in the vertical rail (section-rails.tsx) — replaces the old
+   city-name + clock label pair there, which rendered at .type-label's
+   12px. .local-time-widget's own 24px is tuned for the horizontal
+   placements (footer, mid-page); this scales it down to match what the
+   rail used to show, and forces one nowrap line since flex-wrap would
+   otherwise stack the fields when rotated into the rail's narrow width. */
+.rail-want .local-time-widget {
+  flex-wrap: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+/* Arnav 2026-08-31: "on toggle text should be white" — --muted stays a
+   warm grey in dark mode (#8b857a, tuned for the OLD rail labels' quiet
+   reading), which doesn't reach white. Overriding to --ink here instead,
+   which IS white in dark mode (#f0f5fe), without touching --muted itself
+   since other rail/label text still wants the quieter grey. */
+:root[data-theme="dark"] .rail-want .local-time-widget {
+  color: var(--ink);
 }
 
 /* Opening headline + name block — the site's H1 ("Hi, I'm Arnav"). Open Sauce

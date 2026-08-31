@@ -3,15 +3,16 @@
 import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { CONTACT } from "@/lib/data";
-import { useAmsterdamTime } from "@/lib/use-amsterdam-time";
+import { LocalTimeWidget } from "@/components/ui/local-time-widget";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const RAIL = {
   inset: "16.41px",
-  amsterdamCenter: "79.48%",
-  copyrightCenter: "5.94%",
+  // Midpoint of the old amsterdamCenter (79.48%) / copyrightCenter (5.94%)
+  // pair — WANT replaces both labels with one, sitting where the space
+  // between them used to be, not where either one was.
+  wantCenter: "42.71%",
 } as const;
 
 /**
@@ -72,16 +73,26 @@ export function SectionRails() {
 
     // Same reason as the nav charm: the trigger is built before Lenis settles
     // the document height, so it must re-measure after paint or the fade never
-    // fires.
-    const refresh = requestAnimationFrame(() => ScrollTrigger.refresh());
+    // fires. Waits on the real font too (not just one rAF) — a fallback-font
+    // refresh caches a stale range that a later font swap silently
+    // invalidates, which is what produced the "scroll jumps near the
+    // bottom" bug fixed in footer-nav.tsx; same shape here.
+    let cancelled = false;
+    let refreshFrame = 0;
+    Promise.race([
+      document.fonts.ready,
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]).then(() => {
+      if (cancelled) return;
+      refreshFrame = requestAnimationFrame(() => ScrollTrigger.refresh());
+    });
 
     return () => {
-      cancelAnimationFrame(refresh);
+      cancelled = true;
+      cancelAnimationFrame(refreshFrame);
       context.revert();
     };
   }, []);
-
-  const time = useAmsterdamTime();
 
   return (
     <div
@@ -90,38 +101,26 @@ export function SectionRails() {
       className="section-rails pointer-events-none fixed inset-x-0 bottom-0 z-[90]"
       style={{ top: "var(--nav-h)" }}
     >
-      {/* Not uppercase (Arnav 2026-08-27: "Amsterdam, Netherlands instead of
-          caps") — `.type-label` forces text-transform:uppercase globally, so
-          this needs its own override rather than relying on the shared
-          class's default (removing it there would affect every eyebrow/tag
-          on the site). See `.section-rails .rail-city` in globals.css. */}
-      <span
-        className="type-label rail-city absolute whitespace-nowrap text-muted"
+      {/* WANT — replaces the old two-label pair (city name + live clock),
+          sitting vertically in the space between where they used to be
+          (RAIL.wantCenter is that pair's midpoint, not either label's own
+          position). Same rotate/anchor technique as the labels it replaces:
+          rotate(90deg) around left-center, translate(-50%, -50%) to center
+          the rotated box on that point. This wrapper only positions and
+          rotates — .local-time-widget's own flex-wrap/gap styling lives on
+          LocalTimeWidget's root, untouched, so the same component still
+          renders identically wherever else it's used (footer, mid-page). */}
+      <div
+        className="rail-want absolute whitespace-nowrap"
         style={{
           left: RAIL.inset,
-          top: RAIL.amsterdamCenter,
+          top: RAIL.wantCenter,
           transform: "rotate(90deg) translate(-50%, -50%)",
           transformOrigin: "left center",
         }}
       >
-        {CONTACT.location.city}, Netherlands
-      </span>
-
-      {/* "2026 ©" moved to the footer, under Arnav. (Arnav 2026-08-27) — this
-          slot now shows the live Amsterdam clock instead, matching the nav's
-          own TimeWidget. */}
-      <span
-        className="type-label absolute whitespace-nowrap text-muted"
-        style={{
-          left: RAIL.inset,
-          top: RAIL.copyrightCenter,
-          transform: "rotate(90deg) translate(-50%, -50%)",
-          transformOrigin: "left center",
-        }}
-      >
-        <span className="tabular-nums">{time ?? "--:--:--"}</span>{" "}
-        {CONTACT.location.label}
-      </span>
+        <LocalTimeWidget />
+      </div>
     </div>
   );
 }

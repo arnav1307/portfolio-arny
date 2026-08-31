@@ -58,7 +58,7 @@ export const WORK_WITH_ME = {
     "Grab 15 minutes. bring the messy version, that is the fun part.",
   /** Wraps the email address in the plain line under the calendar. */
   fallback: "Calendars not your thing?",
-  fallbackTail: "works just as well.",
+  fallbackTail: "works just as well. Drag the stickers down below!",
 } as const;
 
 export const FOOTER_NAV = {

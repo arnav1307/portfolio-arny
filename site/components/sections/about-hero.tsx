@@ -109,8 +109,21 @@ export function AboutHero() {
     );
 
     // Fonts and the terminal panel settle after first paint; without a refresh
-    // the pin's start/end are measured against a shorter page.
-    const refresh = requestAnimationFrame(() => ScrollTrigger.refresh());
+    // the pin's start/end are measured against a shorter page. A single rAF
+    // isn't enough on its own — if the real font swaps in AFTER this refresh
+    // runs, the cached range goes stale right as a visitor reaches the
+    // bottom, and the scroll position visibly jumps once GSAP reconciles
+    // against the corrected range. Wait on the font first, same fix as
+    // footer-nav.tsx and section-rails.tsx.
+    let cancelledFontWait = false;
+    let refresh = 0;
+    Promise.race([
+      document.fonts.ready,
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]).then(() => {
+      if (cancelledFontWait) return;
+      refresh = requestAnimationFrame(() => ScrollTrigger.refresh());
+    });
 
     // Entrance stagger after the curtain lifts (USE_ABOUT_ENTRANCE). Flip the
     // flag false to skip — content paints fully opaque with no y offset.
@@ -139,6 +152,7 @@ export function AboutHero() {
     }
 
     return () => {
+      cancelledFontWait = true;
       cancelAnimationFrame(refresh);
       entrance?.kill();
       mm.revert();

@@ -57,6 +57,9 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   // browser back/forward should not leave a curtain hanging.
   const pendingRef = useRef(false);
   const wipeDirRef = useRef<WipeDir>("forward");
+  // Distinguishes true first paint (nothing to reveal) from a later
+  // uncovered transition, i.e. browser back/forward (reveal it anyway).
+  const hasMountedRef = useRef(false);
 
   const navigate = useCallback(
     (href: string) => {
@@ -126,15 +129,50 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
+
+    const isFirstPaint = !hasMountedRef.current;
+    hasMountedRef.current = true;
+
     if (!pendingRef.current) {
-      // Not a transition we started (first paint, back/forward) — make sure the
-      // panel is open rather than stranded closed.
-      if (USE_DIRECTIONAL_WIPE) {
-        gsap.set(panel, { scaleX: 0, scaleY: 1 });
-      } else {
-        gsap.set(panel, { scaleY: 0, scaleX: 1 });
+      // Not a transition WE started via navigate() — either the very first
+      // paint (nothing to reveal, no curtain was ever drawn) or a browser
+      // back/forward (the URL already changed before we got a chance to
+      // cover it). First paint: just make sure the panel is open, same as
+      // before. Back/forward used to hit this exact same "silently snap
+      // open" path — Arnav: "if I use the back or forward button... those
+      // animations don't reflect, looks weird" — because a bare gsap.set
+      // has no duration, so the page just jump-cut instead of transitioning.
+      // Fixed by still playing the reveal wipe here, just without a cover
+      // half (there's nothing to cover — the new route already painted).
+      if (isFirstPaint) {
+        if (USE_DIRECTIONAL_WIPE) {
+          gsap.set(panel, { scaleX: 0, scaleY: 1 });
+        } else {
+          gsap.set(panel, { scaleY: 0, scaleX: 1 });
+        }
+        return;
       }
-      return;
+
+      // Cover instantly (no animation — the old page is already gone), then
+      // run the normal reveal below. Direction doesn't matter without a
+      // cover to be opposite of, so this always uses the vertical wipe's
+      // reveal shape regardless of USE_DIRECTIONAL_WIPE, matching what a
+      // forward navigation's reveal half looks like.
+      gsap.set(panel, { transformOrigin: "top center", scaleX: 1, scaleY: 1 });
+      let inner = 0;
+      const outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => {
+          gsap.to(panel, {
+            scaleY: 0,
+            duration: REVEAL_MS,
+            ease: "power3.inOut",
+          });
+        });
+      });
+      return () => {
+        cancelAnimationFrame(outer);
+        cancelAnimationFrame(inner);
+      };
     }
 
     pendingRef.current = false;

@@ -67,7 +67,10 @@ const nextConfig: NextConfig = {
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'none'",
-      "upgrade-insecure-requests",
+      // ⚠️ NO `upgrade-insecure-requests` here. It is IGNORED in a report-only
+      // policy and the browser logs a console error on every page load saying
+      // so. Vercel serves HTTPS only and HSTS above already forces it, so the
+      // directive buys nothing even when the policy is enforced later.
     ].join("; ");
 
     return [
